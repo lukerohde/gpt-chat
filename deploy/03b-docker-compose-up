@@ -1,0 +1,9 @@
+#!/bin/bash
+
+cd src;
+
+docker-compose up -d
+
+docker-compose exec app "/bin/bash" -c "./manage.py migrate"
+
+docker-compose exec app "/bin/bash" -c "./manage.py createsuperuser --noinput"

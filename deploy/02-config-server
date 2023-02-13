@@ -1,0 +1,10 @@
+#!/bin/bash
+. .digital_ocean_env
+
+echo "Configuring server $DROPLET_IP for user $DIGITAL_OCEAN_APP_USER..."
+
+# install docker
+ssh -o "StrictHostKeyChecking accept-new" root@$DROPLET_IP "bash -s" < deploy/02a-install-docker
+
+# setup non-root user
+ssh root@$DROPLET_IP "bash -s" < deploy/02b-setup-non-root-user $DIGITAL_OCEAN_APP_USER $DROPLET_IP

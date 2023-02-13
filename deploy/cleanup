@@ -1,0 +1,5 @@
+#!/bin/bash
+. ./.digital_ocean_env
+
+doctl compute droplet delete $DROPLET_ID
+doctl compute firewall delete $FIREWALL_ID

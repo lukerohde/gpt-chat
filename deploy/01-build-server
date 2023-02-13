@@ -1,0 +1,93 @@
+#!/bin/bash 
+
+# brew install doctl
+## log into digital ocean and get an api key
+# doctl auth init
+
+. .env-prod
+
+import_key(){
+  echo "Importing key $DIGITAL_OCEAN_KEYNAME"
+  doctl compute ssh-key import $DIGITAL_OCEAN_KEYNAME --public-key-file "$DIGITAL_OCEAN_PUBKEY"
+  export KEY_ID=$(doctl compute ssh-key list --format Name,ID | grep $DIGITAL_OCEAN_KEYNAME | awk '{print $2}')
+}
+
+get_status(){
+  STATUS=$(doctl compute droplet list --format Name,Status | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+}
+
+get_firewall_status(){
+  FIREWALL_STATUS=$(doctl compute firewall list --format Name,Status | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+}
+
+create_droplet(){
+  doctl compute droplet create $DIGITAL_OCEAN_SERVER_NAME --image ubuntu-20-04-x64 --size s-1vcpu-2gb --region syd1 --ssh-keys $KEY_ID
+  while true; do
+    get_status
+    if [[ $STATUS == "active" ]]; then
+        echo "Droplet is now active"
+        break
+    fi
+    echo "Status is '$STATUS'. Waiting for droplet to become active..."
+    sleep 10
+  done
+}
+
+get_key_id(){
+  export KEY_ID=$(doctl compute ssh-key list --format Name,ID | grep $DIGITAL_OCEAN_KEYNAME | awk '{print $2}')
+}
+
+create_firewall(){
+  export FIREWALL_ID=$(doctl compute firewall list --format Name,ID | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+  if [[ -n "$FIREWALL_ID" ]]; then
+    echo "Dropping existing firewall $FIREWALL_ID"
+    doctl compute firewall delete $FIREWALL_ID --force
+  fi 
+
+  echo "Applying new firewall with rules $DIGITAL_OCEAN_FIREWALL_RULES"  
+  doctl compute firewall create --name "$DIGITAL_OCEAN_SERVER_NAME" --inbound-rules "$DIGITAL_OCEAN_FIREWALL_RULES" --outbound-rules "protocol:tcp,ports:0,address:0.0.0.0/0,address:::/0 protocol:udp,ports:0,address:0.0.0.0/0,address:::/0" --droplet-ids $DROPLET_ID
+  doctl compute firewall list --format ID,Status | grep "$DIGITAL_OCEAN_SERVER_NAME"
+  
+  while true; do
+    get_firewall_status
+    if [[ $FIREWALL_STATUS == "succeeded" ]]; then
+        echo "Firewall is now active"
+        break
+    fi
+    echo "Status is '$FIREWALL_STATUS'. Waiting for firewall to become active..."
+    sleep 1
+  done
+  export FIREWALL_ID=$(doctl compute firewall list --format Name,ID | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+}
+
+get_key_id
+if [[ -z "$KEY_ID" ]]; then
+  import_key
+else
+  echo "Key $DIGITAL_OCEAN_KEYNAME already exists with ID: $KEY_ID"
+fi
+
+get_status
+if [[ -z "$STATUS" ]]; then
+  echo "Creating droplet $DIGITAL_OCEAN_SERVER_NAME"
+  create_droplet
+else
+  echo "Droplet $DIGITAL_OCEAN_SERVER_NAME already exists. Status is '$STATUS'"  
+fi
+
+export DROPLET_ID=$(doctl compute droplet list --format Name,ID | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+export DROPLET_IP=$(doctl compute droplet list --format Name,PublicIPv4 | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+
+create_firewall
+
+echo "DROPLET_ID: $DROPLET_ID"
+echo "DROPLET_IP: $DROPLET_IP"
+
+echo Saving digital ocean environment vars
+echo DROPLET_IP=$DROPLET_IP > .digital_ocean_env
+echo DROPLET_ID=$DROPLET_ID >> .digital_ocean_env
+echo FIREWALL_ID=$FIREWALL_ID >> .digital_ocean_env
+echo DIGITAL_OCEAN_APP_USER=$DIGITAL_OCEAN_APP_USER >> .digital_ocean_env
+
+echo Sleeping for 5 seconds to see if that fixes the intermittent unavailablity after build
+sleep 5

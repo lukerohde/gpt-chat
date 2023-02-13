@@ -1,0 +1,4 @@
+#!/bin/bash
+. ./.digital_ocean_env
+
+ssh root@$DROPLET_IP

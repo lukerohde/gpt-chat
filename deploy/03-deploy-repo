@@ -1,0 +1,20 @@
+#!/bin/bash
+. ./.env-prod
+. ./.digital_ocean_env
+
+echo "Shut it down" 
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose down"
+
+# clone down the repo TODO, find a `git push` way to do this
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "bash -s" < deploy/03a-clone-repo $DIGITAL_OCEAN_DEPLOY_REPO
+
+# copy up production config
+scp ./.env-prod $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/.env
+scp ./docker-compose.override.yml.prod $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/docker-compose.override.yml
+
+# fire up the server
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "bash -s" < deploy/03b-docker-compose-up $DIGITAL_OCEAN_APP_USER
+
+echo Browse to http://$DROPLET_IP:$APP_PORT
+echo set the hostnames to this ip address
+echo you will have to shell in and migrate, and setup the super user

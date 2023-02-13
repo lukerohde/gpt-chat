@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Create a new user
+echo Creating user: $1
+echo IP: $2
+username=$1
+ip=$2
+useradd -m $username -s /bin/bash
+
+## Set the password for the new user
+#echo "Enter a password for $username:"
+#passwd $username
+
+# Add the user to the docker group
+usermod -aG docker $username
+
+# Confirm that the user was added to the group
+groups $username
+
+mkdir /home/$username/.ssh
+cp /root/.ssh/authorized_keys /home/$username/.ssh/
+cp /root/.bashrc /home/$username/.bashrc
+cp /root/.profile /home/$username/.profile
+
+chmod 700 /home/$username/.ssh
+chown $username:$username /home/$username/.ssh
+chown $username:$username /home/$username/.ssh/authorized_keys
+chown $username:$username /home/$username/.bashrc
+chown $username:$username /home/$username/.profile
+
+usermod -aG sudo $username
+
+echo $username 'ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+
+echo login to server using...
+echo ssh $username@$ip
+

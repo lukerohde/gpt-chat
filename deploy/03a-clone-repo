@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Create a new user
+rm -Rf src
+mkdir src 
+git clone $1 src
+
+

@@ -1,10 +1,19 @@
 # docker-compose stuff
 .env
+.env-prod
+docker-compose.override.yml.prod
 docker-compose.override.yml
 __pycache__
 .pg_data
 .mysql_data
 .redis_data
+
+# deployment stuff
+
+.digital_ocean_env
+backup
+
+# Python stuff
 
 *.py[cod]
 

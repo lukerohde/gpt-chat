@@ -1,0 +1,26 @@
+#!/bin/bash
+. ./.env-prod
+. ./.digital_ocean_env
+
+local_backup_dir=./backup
+
+echo "Dropping connections"
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose stop"
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose start pg"
+
+echo "Removing old data"
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "sudo rm -Rf /home/$DIGITAL_OCEAN_APP_USER/data"
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "mkdir /home/$DIGITAL_OCEAN_APP_USER/data"
+
+echo "Copying up $(readlink $local_backup_dir/backup_latest.tar.gz)"
+scp  $(readlink $local_backup_dir/backup_latest.tar.gz) $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/restore.tar.gz
+
+echo "Unpacking backup"
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "sudo tar -xvf /home/$DIGITAL_OCEAN_APP_USER/restore.tar.gz -C /"
+
+echo "Restoring database"
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "docker cp /home/$DIGITAL_OCEAN_APP_USER/data/$POSTGRES_DB-db.sql src-pg-1:/"
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "docker exec -t src-pg-1 psql -d $POSTGRES_DB -U $POSTGRES_USER -f $POSTGRES_DB-db.sql"
+
+echo "Starting App"
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose start app"

@@ -16,6 +16,9 @@ services:
       - REDIS_HOST
       - REDIS_PASSWORD
       - REDIS_PORT_NUMBER
+      - DJANGO_SUPERUSER_USERNAME
+      - DJANGO_SUPERUSER_PASSWORD
+      - DJANGO_SUPERUSER_EMAIL
     links:
       - pg
       - redis
@@ -43,8 +46,6 @@ services:
     volumes:
       - redis_data:/bitnami/redis/data
     command: /opt/bitnami/scripts/redis/run.sh --maxmemory 100mb
-    ports:
-      - "$REDIS_PORT_NUMBER:$REDIS_PORT_NUMBER"
 volumes:
   pg_data:
   redis_data:
