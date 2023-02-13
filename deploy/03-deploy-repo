@@ -16,5 +16,3 @@ scp ./docker-compose.override.yml.prod $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home
 ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "bash -s" < deploy/03b-docker-compose-up $DIGITAL_OCEAN_APP_USER
 
 echo Browse to http://$DROPLET_IP:$APP_PORT
-echo set the hostnames to this ip address
-echo you will have to shell in and migrate, and setup the super user

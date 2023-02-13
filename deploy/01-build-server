@@ -89,5 +89,5 @@ echo DROPLET_ID=$DROPLET_ID >> .digital_ocean_env
 echo FIREWALL_ID=$FIREWALL_ID >> .digital_ocean_env
 echo DIGITAL_OCEAN_APP_USER=$DIGITAL_OCEAN_APP_USER >> .digital_ocean_env
 
-echo Sleeping for 5 seconds to see if that fixes the intermittent unavailablity after build
-sleep 5
+echo Sleeping for 10 seconds to see if that fixes the intermittent unavailablity after build
+sleep 10

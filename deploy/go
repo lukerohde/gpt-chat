@@ -4,8 +4,8 @@
 ## log into digital ocean and get an api key
 # doctl auth init
 
-source 01-build-server 
+source deploy/01-build-server 
 
-source 02-config-server
+source deploy/02-config-server
 
-source 03-deploy-repo
+source deploy/03-deploy-repo

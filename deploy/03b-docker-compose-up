@@ -2,8 +2,12 @@
 
 cd src;
 
-docker-compose up -d
+echo "Starting docker-compose... "
+docker-compose up app -d
 
-docker-compose exec app "/bin/bash" -c "./manage.py migrate"
+echo "Migrating data base"
+docker-compose exec app "/bin/bash" -c "./manage.py migrate && ./manage.py createsuperuser --noinput" 
 
-docker-compose exec app "/bin/bash" -c "./manage.py createsuperuser --noinput"
+# This is working because the previous line is exiting too soon
+# echo "Creating super user..."
+# docker-compose exec app "/bin/bash" -c "./manage.py createsuperuser --noinput"
