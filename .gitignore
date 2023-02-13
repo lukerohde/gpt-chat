@@ -1,3 +1,11 @@
+# docker-compose stuff
+.env
+docker-compose.override.yml
+__pycache__
+.pg_data
+.mysql_data
+.redis_data
+
 *.py[cod]
 
 # C extensions

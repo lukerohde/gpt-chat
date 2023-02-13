@@ -22,7 +22,7 @@ PROJECT_ROOT = BASE_DIR
 # See https://docs.djangoproject.com/en/dev/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'ABC1234' #TODO Changeme
+SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -78,16 +78,26 @@ WSGI_APPLICATION = 'chat.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'chat',
-        'USER': 'root',
-        'PASSWORD': 'root',
-        'OPTIONS': {
-        }
+DATABASES = { 
+    'default': { 
+        'ENGINE': 'django.db.backends.postgresql', 
+        'NAME': os.environ['POSTGRES_DB'],  
+        'HOST': os.environ['POSTGRES_HOST'],  
+        'PORT': os.environ['POSTGRES_PORT'],  
+        'USER': os.environ['POSTGRES_USER'],  
+        'PASSWORD': os.environ['POSTGRES_PASSWORD'] ,     
+
+    }, # Test Database Configuration 
+    'testdb': {  
+        'ENGINE': 'django.db.backends.postgresql', 
+        'NAME': os.environ['POSTGRES_DB'] + "_test",  
+        'HOST': os.environ['POSTGRES_HOST'],  
+        'PORT': os.environ['POSTGRES_PORT'],  
+        'USER': os.environ['POSTGRES_USER'],  
+        'PASSWORD': os.environ['POSTGRES_PASSWORD'] ,     
     }
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/dev/ref/settings/#auth-password-validators
@@ -182,7 +192,8 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
+            #"hosts": [(os.environ['REDIS_HOST'],os.environ['REDIS_PORT_NUMBER'])],
+            "hosts": [(f"redis://redis:{os.environ['REDIS_PASSWORD']}@{os.environ['REDIS_HOST']}:{os.environ['REDIS_PORT_NUMBER']}")]
         },
     },
 }

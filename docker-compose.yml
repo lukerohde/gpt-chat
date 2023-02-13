@@ -1,0 +1,50 @@
+version: "3"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./app.dockerfile
+    restart: unless-stopped
+    environment:
+      - DJANGO_SECRET_KEY
+      - APP_PORT
+      - POSTGRES_DB
+      - POSTGRES_HOST
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_PORT
+      - REDIS_HOST
+      - REDIS_PASSWORD
+      - REDIS_PORT_NUMBER
+    links:
+      - pg
+      - redis
+    tty: true
+    stdin_open: true
+    command: "./manage.py runserver 0.0.0.0:$APP_PORT"
+  pg:
+    image: postgres:9.6.8
+    restart: unless-stopped
+    environment:
+      - PGDATA=/pgdata
+      - POSTGRES_DB
+      - POSTGRES_HOST
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+    volumes:
+      - pg_data:/pgdata
+  redis:
+    # https://cloudinfrastructureservices.co.uk/run-redis-with-docker-compose/
+    image: bitnami/redis:latest
+    environment:
+      - REDIS_PASSWORD
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL,CONFIG
+      - REDIS_PORT_NUMBER
+    volumes:
+      - redis_data:/bitnami/redis/data
+    command: /opt/bitnami/scripts/redis/run.sh --maxmemory 100mb
+    ports:
+      - "$REDIS_PORT_NUMBER:$REDIS_PORT_NUMBER"
+volumes:
+  pg_data:
+  redis_data:
