@@ -12,6 +12,7 @@ __pycache__
 
 .digital_ocean_env
 backup
+/data/certbot
 
 # Python stuff
 
