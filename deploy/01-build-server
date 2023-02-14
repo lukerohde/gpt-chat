@@ -60,6 +60,24 @@ create_firewall(){
   export FIREWALL_ID=$(doctl compute firewall list --format Name,ID | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
 }
 
+create_reserved_ip() {
+  echo "Creating a reserved IP"
+  doctl compute reserved-ip create --droplet-id $DROPLET_ID
+}
+
+get_reserved_ip(){
+  # TODO there is a potential bugs, where an IP belongs to another service in the same project, or there are more than one IP reserved IP addresses
+  export RESERVED_IP=$(doctl compute reserved-ip list --format IP --no-header | awk '{print $1}')
+  export ASSIGNED_IP=$(doctl compute reserved-ip list --format DropletName,IP --no-header | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+}
+
+
+assign_ip(){
+  echo "Assigning Reserved IP $RESERVED_IP"
+  doctl compute reserved-ip-action assign $RESERVED_IP $DROPLET_ID
+}
+
+
 get_key_id
 if [[ -z "$KEY_ID" ]]; then
   import_key
@@ -78,16 +96,27 @@ fi
 export DROPLET_ID=$(doctl compute droplet list --format Name,ID | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
 export DROPLET_IP=$(doctl compute droplet list --format Name,PublicIPv4 | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
 
-create_firewall
+get_reserved_ip
+if [[ -z "$RESERVED_IP" ]]; then 
+  create_reserved_ip
+  get_reserved_ip
+elif [[ -z "$ASSIGNED_IP" ]]; then 
+  assign_ip
+  get_reserved_ip
+else 
+  echo Droplet already assigned $ASSIGNED_IP - it should match $RESERVED_IP
+fi 
 
-echo "DROPLET_ID: $DROPLET_ID"
-echo "DROPLET_IP: $DROPLET_IP"
+create_firewall
 
 echo Saving digital ocean environment vars
 echo DROPLET_IP=$DROPLET_IP > .digital_ocean_env
+echo RESERVED_IP=$RESERVED_IP >> .digital_ocean_env
 echo DROPLET_ID=$DROPLET_ID >> .digital_ocean_env
 echo FIREWALL_ID=$FIREWALL_ID >> .digital_ocean_env
 echo DIGITAL_OCEAN_APP_USER=$DIGITAL_OCEAN_APP_USER >> .digital_ocean_env
+
+cat ./.digital_ocean_env
 
 echo Sleeping for 10 seconds to see if that fixes the intermittent unavailablity after build
 sleep 10
