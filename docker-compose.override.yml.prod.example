@@ -17,6 +17,8 @@ services:
   certbot:
     image: certbot/certbot
     command: certonly -v --webroot --webroot-path /var/www/certbot --email $DJANGO_SUPERUSER_EMAIL --agree-tos --no-eff-email --domains $DOMAINS
+    links:
+      - nginx
     volumes:
       - ./.certbot/certs:/etc/letsencrypt
       - ./.certbot/challenge:/var/www/certbot
