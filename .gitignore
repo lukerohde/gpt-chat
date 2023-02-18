@@ -13,6 +13,8 @@ __pycache__
 .digital_ocean_env
 backup
 .certbot
+.nginx
+.tmp
 
 # Python stuff
 
