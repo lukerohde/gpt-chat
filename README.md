@@ -202,14 +202,3 @@ ddeleteall() {
     docker system prune -a
 }
 ```
-
-
--- Getting certbot going -- 
-
-There are two modes for nginx - before certs and after certs
-
-the cert mode needs nginx
-
-curl -L --create-dirs -o .certbot/certs/options-ssl-nginx.conf https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf
-
-openssl dhparam -out .certbot/certs//ssl-dhparams.pem 2048
