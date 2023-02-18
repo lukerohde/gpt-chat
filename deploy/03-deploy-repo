@@ -12,6 +12,7 @@ ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "bash -s" < deploy/03a-clone-repo $DIGIT
 scp ./.env-prod $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/.env
 scp ./docker-compose.override.yml.prod $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/docker-compose.override.yml
 
+rm .tmp/http*.conf
 # generate nginx conf
 for DOMAIN in $(echo $DOMAINS | tr ',' ' '); do
     sed "s/example.com/$DOMAIN/g" deploy/nginx/http.conf > .tmp/http-$DOMAIN.conf

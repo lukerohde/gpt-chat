@@ -8,18 +8,18 @@ mv .tmp/http-*.conf .nginx/
 
 docker-compose up certbot
 
-# # SSL CONFIG
-# echo "Praying to the SSL gods for security"
-# curl -L --create-dirs -o .certbot/certs/options-ssl-nginx.conf https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf
+# SSL CONFIG
+echo "Praying to the SSL gods for security"
+sudo curl -L --create-dirs -o .certbot/certs/options-ssl-nginx.conf https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf
 
-# openssl dhparam -out .certbot/certs/ssl-dhparams.pem 2048
+sudo openssl dhparam -out .certbot/certs/ssl-dhparams.pem 2048
 
-# mv .tmp/https-*.conf .nginx/
+mv .tmp/https-*.conf .nginx/
 
-# docker-compose exec nginx nginx -s reload
+docker-compose exec nginx nginx -s reload
 
-# echo "Starting docker-compose... "
-# docker-compose up app -d
+echo "Starting docker-compose... "
+docker-compose up app -d
 
 # echo "Migrating data base"
 # docker-compose exec app "/bin/bash" -c "./manage.py migrate && ./manage.py createsuperuser --noinput" 
