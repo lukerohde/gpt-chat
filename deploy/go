@@ -6,6 +6,10 @@
 
 source deploy/01-build-server 
 
+echo Sleeping for 10 seconds to see if that fixes the intermittent unavailablity after build
+
+sleep 10
+
 source deploy/02-config-server
 
 source deploy/03-deploy-repo

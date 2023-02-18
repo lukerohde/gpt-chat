@@ -39,7 +39,15 @@ get_key_id(){
 
 create_firewall(){
   export FIREWALL_ID=$(doctl compute firewall list --format Name,ID | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+  export CURRENT_RULES=$(doctl compute firewall get $FIREWALL_ID --format InboundRules --no-header)
+
   if [[ -n "$FIREWALL_ID" ]]; then
+    export CURRENT_RULES=$(doctl compute firewall get $FIREWALL_ID --format InboundRules --no-header)
+    if [[ "$DIGITAL_OCEAN_FIREWALL_RULES" == "$CURRENT_RULES" ]]; then
+      echo "Firewall rules have not changed. Skipping update."
+      return
+    fi
+
     echo "Dropping existing firewall $FIREWALL_ID"
     doctl compute firewall delete $FIREWALL_ID --force
   fi 
@@ -77,6 +85,50 @@ assign_ip(){
   doctl compute reserved-ip-action assign $RESERVED_IP $DROPLET_ID
 }
 
+update_domains() {
+  DOMAINS=${DOMAINS:-""}
+
+  # Check that the required environment variables are set
+  if [ -z "$DOMAINS" ] || [ -z "$RESERVED_IP" ]; then
+    echo "ERROR: Both DOMAINS and RESERVED_IP environment variables must be set."
+    exit 1
+  fi
+
+  for DOMAIN in $(echo $DOMAINS | tr ',' ' '); do
+    
+    # Check if the DNS Zone exists for the domain
+    if ! doctl compute domain list $DOMAIN --format "Domain" | grep -q "^$DOMAIN$" ; then 
+      # if not, create it 
+      echo "Creating domain for $DOMAIN"
+      doctl compute domain create $DOMAIN --ip-address $RESERVED_IP
+    fi
+
+    export WWW_RECORD_ID=$(doctl compute domain records list $DOMAIN --format "ID,Type,Name,Data" | grep "\sA\s*www\s" | awk '{print $1}') ; 
+    export ROOT_RECORD_ID=$(doctl compute domain records list $DOMAIN --format "ID,Type,Name,Data" | grep "\sA\s*\@\s" | awk '{print $1}') ; 
+
+    echo WWW RECORD: $WWW_RECORD_ID
+    echo Root Record: $ROOT_RECORD_ID
+
+    # Check if the www record already exists for the domain
+    if [[ -z "$WWW_RECORD_ID" ]]; then
+      echo "Create A record www for $DOMAIN with $RESERVED_IP"
+      doctl compute domain records create $DOMAIN --record-type A --record-name www --record-data $RESERVED_IP
+    else
+      echo "Update A record www for $DOMAIN with $RESERVED_IP"
+      doctl compute domain records update $DOMAIN --record-id $WWW_RECORD_ID --record-data $RESERVED_IP
+    fi
+
+    # Check if the @ record already exists for the domain
+    if [[ -z "$ROOT_RECORD_ID" ]]; then
+      echo "Create A record @ for $DOMAIN with $RESERVED_IP"
+      doctl compute domain records create $DOMAIN --record-type A --record-name @ --record-data $RESERVED_IP
+    else
+      echo "Update A record @ for $DOMAIN with $RESERVED_IP"
+      doctl compute domain records update $DOMAIN --record-id $ROOT_RECORD_ID --record-data $RESERVED_IP
+    fi
+  done
+}
+
 
 get_key_id
 if [[ -z "$KEY_ID" ]]; then
@@ -107,6 +159,8 @@ else
   echo Droplet already assigned $ASSIGNED_IP - it should match $RESERVED_IP
 fi 
 
+update_domains
+
 create_firewall
 
 echo Saving digital ocean environment vars
@@ -118,5 +172,3 @@ echo DIGITAL_OCEAN_APP_USER=$DIGITAL_OCEAN_APP_USER >> .digital_ocean_env
 
 cat ./.digital_ocean_env
 
-echo Sleeping for 10 seconds to see if that fixes the intermittent unavailablity after build
-sleep 10

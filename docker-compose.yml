@@ -54,6 +54,7 @@ services:
       - ./nginx:/etc/nginx/conf.d
       - ./.certbot/certs:/etc/letsencrypt
       - ./.certbot/challenge:/var/www/certbot
+      - ./.certbot/logs:/var/logs/letsencrypt
     ports:
       - "80:80"
       - "443:443"
