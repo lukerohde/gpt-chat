@@ -2,24 +2,35 @@
 
 cd src;
 
+. .env
+
 # GENERATE CERTS
 echo "Praying to the letsencrypt gods for my certs"
 mv .tmp/http-*.conf .nginx/
-
-docker-compose up certbot
+for A_NAME in $(echo $DIGITAL_OCEAN_A_RECORDS | tr ',' ' '); do
+    DOMAIN=$DIGITAL_OCEAN_DOMAIN
+    if $A_NAME != "@"; then 
+        DOMAIN = $A_NAME + "." + $DOMAIN
+    fi
+    # TODO only proceed if certs don't already exist
+    docker-compose up certbot
+done
 
 # SSL CONFIG
 echo "Praying to the SSL gods for security"
-sudo curl -L --create-dirs -o .certbot/certs/options-ssl-nginx.conf https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf
+# TODO Only do this if the file doesn't exist
+    sudo curl -L --create-dirs -o .certbot/certs/options-ssl-nginx.conf https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf
 
-sudo openssl dhparam -out .certbot/certs/ssl-dhparams.pem 2048
+# TODO Only do this if the file doesn't exist
+    sudo openssl dhparam -out .certbot/certs/ssl-dhparams.pem 2048
 
-mv .tmp/https-*.conf .nginx/
+# TODO Only do this if .tmp/http files exist
+    mv .tmp/https-*.conf .nginx/
 
-docker-compose exec nginx nginx -s reload
+    docker-compose exec nginx nginx -s reload
 
 echo "Starting docker-compose... "
 docker-compose up app -d
 
 # echo "Migrating data base"
-# docker-compose exec app "/bin/bash" -c "./manage.py migrate && ./manage.py createsuperuser --noinput" 
+docker-compose exec app "/bin/bash" -c "./manage.py migrate && ./manage.py createsuperuser --noinput" 

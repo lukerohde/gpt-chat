@@ -1,8 +1,13 @@
 #!/bin/bash
 
 # Create a new user
-sudo rm -Rf src
-mkdir src 
-git clone $1 src
+if [ -d ~/.src ]; then 
+    cd src
+    git pull origin
+else 
+    sudo rm -Rf src
+    mkdir src 
+    git clone $1 src
+fi
 
-
+# TODO Check out branch, can we provide the deployment branch as a param?
