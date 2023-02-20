@@ -1,41 +1,44 @@
 #!/bin/bash
-echo -- Installing Docker -- 
 
-# Update the package list
-sudo apt-get update
+if ! which docker-compose >/dev/null; then
+    echo -- Installing Docker -- 
 
-# Install packages to allow apt to use a repository over HTTPS
-sudo apt-get install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg-agent \
-    software-properties-common
+    # Update the package list
+    sudo apt-get update
 
-# Add Docker's official GPG key
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    # Install packages to allow apt to use a repository over HTTPS
+    sudo apt-get install -y \
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        gnupg-agent \
+        software-properties-common
 
-# Add the Docker repository to APT sources
-sudo add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-   $(lsb_release -cs) \
-   stable"
+    # Add Docker's official GPG key
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 
-# Update the package list again
-sudo apt-get update
+    # Add the Docker repository to APT sources
+    sudo add-apt-repository \
+    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) \
+    stable"
 
-# Install the latest version of Docker CE
-sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+    # Update the package list again
+    sudo apt-get update
 
-# Add the current user to the Docker group
-sudo usermod -aG docker $USER
+    # Install the latest version of Docker CE
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
-# Install Docker Compose
-echo -- Installing Docker Compose -- 
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.15.1/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+    # Add the current user to the Docker group
+    sudo usermod -aG docker $USER
 
-# Apply executable permissions to the binary
-sudo chmod +x /usr/local/bin/docker-compose
+    # Install Docker Compose
+    echo -- Installing Docker Compose -- 
+    sudo curl -L "https://github.com/docker/compose/releases/download/v2.15.1/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
 
-# Install git 
-sudo apt-get install git
+    # Apply executable permissions to the binary
+    sudo chmod +x /usr/local/bin/docker-compose
+
+    # Install git 
+    sudo apt-get install git
+fi

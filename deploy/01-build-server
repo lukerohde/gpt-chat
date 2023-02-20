@@ -105,7 +105,7 @@ update_domains() {
 
   for A_NAME in $(echo $DIGITAL_OCEAN_A_RECORDS | tr ',' ' '); do
 
-    export RECORD_ID=$(doctl compute domain records list $A_NAME --format "ID,Type,Name,Data" | grep "\sA\s*$A_NAME\s" | awk '{print $1}') ; 
+    export RECORD_ID=$(doctl compute domain records list $DIGITAL_OCEAN_DOMAIN --format "ID,Type,Name,Data" | grep "\sA\s*$A_NAME\s" | awk '{print $1}') ; 
 
     echo A_RECORD: $RECORD_ID
 

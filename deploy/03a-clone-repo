@@ -1,11 +1,10 @@
 #!/bin/bash
 
 # Create a new user
-if [ -d ~/.src ]; then 
+if [ -d ~/src ]; then 
     cd src
     git pull origin
 else 
-    sudo rm -Rf src
     mkdir src 
     git clone $1 src
 fi

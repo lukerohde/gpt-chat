@@ -15,10 +15,11 @@ scp ./docker-compose.override.yml.prod $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home
 rm .tmp/http*.conf
 # generate nginx conf
 for A_NAME in $(echo $DIGITAL_OCEAN_A_RECORDS | tr ',' ' '); do
-    DOMAIN=$DIGITAL_OCEAN_DOMAIN
-    if $A_NAME != "@"; then 
-        DOMAIN = $A_NAME + "." + $DOMAIN
+    export DOMAIN=$DIGITAL_OCEAN_DOMAIN
+    if [ "$A_NAME" != "@" ]; then 
+        export DOMAIN="$A_NAME.$DOMAIN"
     fi
+    echo "Generating nginx files for $DOMAIN"
     sed "s/example.com/$DOMAIN/g" deploy/nginx/http.conf > .tmp/http-$DOMAIN.conf
     sed "s/example.com/$DOMAIN/g" deploy/nginx/https.conf > .tmp/https-$DOMAIN.conf
 done
@@ -32,9 +33,9 @@ ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "bash -s" < deploy/03b-docker-compose-up
 echo Browse to either;
 echo - http://$DROPLET_IP:$APP_PORT
 for A_NAME in $(echo $DIGITAL_OCEAN_A_RECORDS | tr ',' ' '); do
-    DOMAIN=$DIGITAL_OCEAN_DOMAIN
-    if $A_NAME != "@"; then 
-        DOMAIN = $A_NAME + "." + $DOMAIN
+    export DOMAIN=$DIGITAL_OCEAN_DOMAIN
+    if [ "$A_NAME" != "@" ]; then 
+        export DOMAIN="$A_NAME.$DOMAIN"
     fi
     echo - https://$DOMAIN
 done
