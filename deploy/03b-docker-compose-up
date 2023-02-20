@@ -16,7 +16,7 @@ for A_NAME in $(echo $DIGITAL_OCEAN_A_RECORDS | tr ',' ' '); do
     if [ "$A_NAME" != "@" ]; then 
         export DOMAIN="$A_NAME.$DOMAIN"
     fi
-    # TODO only proceed if certs don't already exist
+
     if ! sudo test -e ".certbot/certs/live/$DOMAIN"; then
         echo "Running cert bot for $DOMAIN"
         docker-compose up certbot
@@ -30,19 +30,17 @@ done
 
 # SSL CONFIG
 echo "Praying to the SSL gods for security"
-# TODO Only do this if the file doesn't exist
+
 if ! sudo test -e .certbot/certs/options-ssl-nginx.conf; then 
     sudo curl -L --create-dirs -o .certbot/certs/options-ssl-nginx.conf https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf
 fi 
 
-# TODO Only do this if the file doesn't exist
 if ! sudo test -e .certbot/certs/ssl-dhparams.pem; then 
     sudo openssl dhparam -out .certbot/certs/ssl-dhparams.pem 2048
 fi
 
-# now that we've got our certs, reload with https
-mv .tmp/https-*.conf .nginx/
-docker-compose exec nginx nginx -s reload
+# I'm having dramas here - the script is exiting prematurely
 
-echo "Migrating data base and create super user"
-docker-compose exec app "/bin/bash" -c "./manage.py migrate && ./manage.py createsuperuser --noinput" 
+echo "Reloading nginx with application https conf files"
+mv .tmp/https-*.conf .nginx/
+docker-compose exec nginx nginx -s reload 
