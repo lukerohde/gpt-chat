@@ -6,6 +6,8 @@ services:
   nginx:
     image: nginx:1.15-alpine
     restart: unless-stopped
+    links:
+      - app
     volumes:
       - ./.nginx:/etc/nginx/conf.d
       - ./.certbot/certs:/etc/letsencrypt

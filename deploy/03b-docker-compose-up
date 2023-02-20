@@ -20,6 +20,11 @@ for A_NAME in $(echo $DIGITAL_OCEAN_A_RECORDS | tr ',' ' '); do
     if ! sudo test -e ".certbot/certs/live/$DOMAIN"; then
         echo "Running cert bot for $DOMAIN"
         docker-compose up certbot
+
+        if ! sudo test -e ".certbot/certs/live/$DOMAIN"; then
+            echo "Couldn't generate cert for $DOMAIN.  Removing .tmp https nginx file"
+            rm ".tmp/https-$DOMAIN.conf" 
+        fi
     fi
 done
 
