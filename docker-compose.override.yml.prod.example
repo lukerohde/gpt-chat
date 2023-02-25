@@ -12,6 +12,8 @@ services:
       - ./.nginx:/etc/nginx/conf.d
       - ./.certbot/certs:/etc/letsencrypt
       - ./.certbot/challenge:/var/www/certbot
+      - ./app/.collectstatic/static_root:/usr/share/nginx/html/static_root
+      - ./app/.collectstatic/media_root:/usr/share/nginx/html/media_root
     ports:
       - "80:80"
       - "443:443"
@@ -25,4 +27,5 @@ services:
       - ./.certbot/certs:/etc/letsencrypt
       - ./.certbot/challenge:/var/www/certbot
       - ./.certbot/logs:/var/logs/letsencrypt
+      
     

@@ -19,6 +19,20 @@ services:
       - ./.redis_data:/bitnami/redis/data
     ports:
       - "$REDIS_PORT_NUMBER:$REDIS_PORT_NUMBER"
+  nginx:
+    image: nginx:1.15-alpine
+    restart: unless-stopped
+    links:
+      - app
+    volumes:
+      - ./.nginx:/etc/nginx/conf.d
+      - ./.certbot/certs:/etc/letsencrypt
+      - ./.certbot/challenge:/var/www/certbot
+      - ./app/.collectstatic/static_root:/usr/share/nginx/html/static_root
+      - ./app/.collectstatic/media_root:/usr/share/nginx/html/media_root
+    ports:
+      - "80:80"
+      - "443:443"
 volumes:
   app_user:
   pg_data:

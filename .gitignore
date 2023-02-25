@@ -9,12 +9,13 @@ __pycache__
 .redis_data
 
 # deployment stuff
-
 .digital_ocean_env
 backup
 .certbot
 .nginx
 .tmp
+app/.collectstatic
+.DS_Store
 
 # Python stuff
 

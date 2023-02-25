@@ -162,10 +162,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/dev/howto/static-files/
 
 # Collect static files here
-STATIC_ROOT = join(PROJECT_ROOT, 'run', 'static_root')
+STATIC_ROOT = join(PROJECT_ROOT, '.collectstatic', 'static_root')
+STATIC_URL = '/static/'
 
 # Collect media files here
-MEDIA_ROOT = join(PROJECT_ROOT, 'run', 'media_root')
+MEDIA_ROOT = join(PROJECT_ROOT, '.collectstatic', 'media_root')
 MEDIA_URL = '/media/'
 
 # look for static assets here
@@ -173,7 +174,6 @@ STATICFILES_DIRS = [
     join(PROJECT_ROOT, 'static'),
 ]
 
-STATIC_URL = '/static/'
 ADMIN_MEDIA_PREFIX = '/static/admin/'
 
 LOGIN_REDIRECT_URL = '/'

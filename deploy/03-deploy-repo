@@ -31,8 +31,15 @@ scp .tmp/* $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src
 ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "bash -s" < deploy/03b-docker-compose-up $DIGITAL_OCEAN_APP_USER
 
 # This is annoying that I can't have it in the previous script - it terminates early for reasons I can't figure
-echo "Migrating data base and create super user"
-ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py migrate && ./manage.py createsuperuser --noinput\" "
+echo "Migrating database"
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py migrate"
+
+echo "Creating super user"
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py createsuperuser --noinput\" "
+
+echo "Collecting static files"
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py collectstatic --noinput\" "
+
 
 echo Browse to either;
 echo - http://$DROPLET_IP:$APP_PORT
