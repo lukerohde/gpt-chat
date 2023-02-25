@@ -3,6 +3,8 @@ services:
   app:
     ports:
       - $APP_PORT:$APP_PORT 
+    #volumes:
+    #  - ./app/.collectstatic/:./app/.collectstatic/ # to enable serverside ./manage.py collectstatic
   nginx:
     image: nginx:1.15-alpine
     restart: unless-stopped

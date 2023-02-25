@@ -2,44 +2,45 @@
 . ./.env-prod
 . ./.digital_ocean_env
 
-echo "Shut it down" 
-ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose down"
+# echo "Shut it down" 
+# ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose down"
 
-# clone down the repo TODO, find a `git push` way to do this
-ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "bash -s" < deploy/03a-clone-repo $DIGITAL_OCEAN_DEPLOY_REPO
+# # clone down the repo TODO, find a `git push` way to do this
+# ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "bash -s" < deploy/03a-clone-repo $DIGITAL_OCEAN_DEPLOY_REPO
 
-# copy up production config
-scp ./.env-prod $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/.env
-scp ./docker-compose.override.yml.prod $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/docker-compose.override.yml
+# # copy up production config
+# scp ./.env-prod $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/.env
+# scp ./docker-compose.override.yml.prod $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/docker-compose.override.yml
 
-rm .tmp/http*.conf
-# generate nginx conf
-for A_NAME in $(echo $DIGITAL_OCEAN_A_RECORDS | tr ',' ' '); do
-    export DOMAIN=$DIGITAL_OCEAN_DOMAIN
-    if [ "$A_NAME" != "@" ]; then 
-        export DOMAIN="$A_NAME.$DOMAIN"
-    fi
-    echo "Generating nginx files for $DOMAIN"
-    sed "s/example.com/$DOMAIN/g" deploy/nginx/http.conf > .tmp/http-$DOMAIN.conf
-    sed "s/example.com/$DOMAIN/g" deploy/nginx/https.conf > .tmp/https-$DOMAIN.conf
-done
+# rm .tmp/http*.conf
+# # generate nginx conf
+# for A_NAME in $(echo $DIGITAL_OCEAN_A_RECORDS | tr ',' ' '); do
+#     export DOMAIN=$DIGITAL_OCEAN_DOMAIN
+#     if [ "$A_NAME" != "@" ]; then 
+#         export DOMAIN="$A_NAME.$DOMAIN"
+#     fi
+#     echo "Generating nginx files for $DOMAIN"
+#     sed "s/example.com/$DOMAIN/g" deploy/nginx/http.conf > .tmp/http-$DOMAIN.conf
+#     sed "s/example.com/$DOMAIN/g" deploy/nginx/https.conf > .tmp/https-$DOMAIN.conf
+# done
 
-# copy them up to the server
-scp .tmp/* $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/.tmp/
+# # copy them up to the server
+# scp .tmp/* $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/.tmp/
 
-# fire up the server
-ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "bash -s" < deploy/03b-docker-compose-up $DIGITAL_OCEAN_APP_USER
+# # fire up the server
+# ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "bash -s" < deploy/03b-docker-compose-up $DIGITAL_OCEAN_APP_USER
 
-# This is annoying that I can't have it in the previous script - it terminates early for reasons I can't figure
-echo "Migrating database"
-ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py migrate"
+# # This is annoying that I can't have it in the previous script - it terminates early for reasons I can't figure
+# echo "Migrating database"
+# ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py migrate\" "
 
-echo "Creating super user"
-ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py createsuperuser --noinput\" "
+# echo "Creating super user"
+# ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py createsuperuser --noinput\" "
 
-echo "Collecting static files"
-ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py collectstatic --noinput\" "
-
+#echo "Collecting files"
+#ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py collectstatic --noinput\" "
+echo "Copying static files"
+rsync -auv app/.collectstatic/static_root/ $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/app/.collectstatic/static_root/
 
 echo Browse to either;
 echo - http://$DROPLET_IP:$APP_PORT
