@@ -38,7 +38,7 @@ echo "Creating super user"
 ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py createsuperuser --noinput\" "
 
 echo "Collecting files"
-ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py collectstatic --noinput\" "
+docker-compose run app "/bin/bash" -c "/home/pyuser/app/manage.py collectstatic --no-input"
 
 echo "Copying static files"
 rsync -auv app/.collectstatic/static_root/ $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/app/.collectstatic/static_root/
