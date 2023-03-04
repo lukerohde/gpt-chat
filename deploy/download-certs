@@ -1,0 +1,20 @@
+#!/bin/bash
+. ./.env-prod
+. ./.digital_ocean_env
+
+local_backup_dir=./backup
+current_date=$(date +%Y-%m-%d)
+
+echo Dumping postgres database
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "mkdir /home/$DIGITAL_OCEAN_APP_USER/data"
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "docker exec -t src-pg-1 pg_dump -d $POSTGRES_DB -U $POSTGRES_USER -c > /home/$DIGITAL_OCEAN_APP_USER/data/$POSTGRES_DB-db.sql"
+
+echo Backing up database dump and gitea data
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "sudo tar -zcvf /home/$DIGITAL_OCEAN_APP_USER/backup.tar.gz /home/$DIGITAL_OCEAN_APP_USER/data"
+
+# Download the backup archive to the local machine
+echo Downloading backup
+scp $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/backup.tar.gz $local_backup_dir/backup_$current_date.tar.gz
+
+rm -Rf $local_backup_dir/backup_latest.tar.gz 
+ln -s $local_backup_dir/backup_$current_date.tar.gz $local_backup_dir/backup_latest.tar.gz 
