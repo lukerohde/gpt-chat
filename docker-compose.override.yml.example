@@ -12,7 +12,7 @@ services:
     ports:
       - $POSTGRES_PORT:5432
     volumes:
-      - ./.pg_data:/pgdata
+      - ./.pg_data:/pg_data
   redis:
     command: /opt/bitnami/scripts/redis/run.sh --maxmemory 100mb
     volumes:

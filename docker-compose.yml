@@ -27,16 +27,16 @@ services:
     command: "./manage.py runserver 0.0.0.0:$APP_PORT"
     #command: "gunicorn --bind 0.0.0.0:3000 chat.asgi -w 4 -k uvicorn.workers.UvicornWorker"
   pg:
-    image: postgres:9.6.8
+    image: postgres:15
     restart: unless-stopped
     environment:
-      - PGDATA=/pgdata
+      - PGDATA=/pg_data
       - POSTGRES_DB
       - POSTGRES_HOST
       - POSTGRES_USER
       - POSTGRES_PASSWORD
     volumes:
-      - pg_data:/pgdata
+      - pg_data:/pg_data
   redis:
     # https://cloudinfrastructureservices.co.uk/run-redis-with-docker-compose/
     image: bitnami/redis:latest
