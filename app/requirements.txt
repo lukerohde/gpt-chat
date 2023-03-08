@@ -1,10 +1,11 @@
 psycopg2
 djangorestframework==3.11.2
 django-filter==2.4.0
-channels==3.0.1
-channels-redis
+channels
+channels-redis==3.4.1
+daphne
 pytz
 Django==3.1.14
 Markdown==3.2.1
-daphne
+
 
