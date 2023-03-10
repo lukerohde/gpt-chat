@@ -40,12 +40,14 @@ class MessageModel(Model):
         }
 
         channel_layer = get_channel_layer()
-        print("user.id {}".format(self.user.id))
-        print("user.id {}".format(self.recipient.id))
-
+        
         async_to_sync(channel_layer.group_send)("{}".format(self.user.id), notification)
         async_to_sync(channel_layer.group_send)("{}".format(self.recipient.id), notification)
-
+        
+        # temp hack
+        if "bot" in self.recipient.username:
+            async_to_sync(channel_layer.send)('bot-task', {'type': 'add_dialog', 'message.id': '{}'.format(self.id)})
+    
     def save(self, *args, **kwargs):
         """
         Trims white spaces, saves the message and notifies the recipient via WS
@@ -63,3 +65,6 @@ class MessageModel(Model):
         verbose_name = 'message'
         verbose_name_plural = 'messages'
         ordering = ('-timestamp',)
+
+        
+   

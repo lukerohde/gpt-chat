@@ -22,10 +22,36 @@ services:
     links:
       - pg
       - redis
+      - bot
     tty: true
     stdin_open: true
     command: "./manage.py runserver 0.0.0.0:$APP_PORT"
     #command: "gunicorn --bind 0.0.0.0:3000 chat.asgi -w 4 -k uvicorn.workers.UvicornWorker"
+  bot:
+    build:
+      context: .
+      dockerfile: ./app.dockerfile
+    restart: unless-stopped
+    environment:
+      - DJANGO_SECRET_KEY
+      - APP_PORT
+      - POSTGRES_DB
+      - POSTGRES_HOST
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_PORT
+      - REDIS_HOST
+      - REDIS_PASSWORD
+      - REDIS_PORT_NUMBER
+      - DJANGO_SUPERUSER_USERNAME
+      - DJANGO_SUPERUSER_PASSWORD
+      - DJANGO_SUPERUSER_EMAIL
+    links:
+      - pg
+      - redis
+    tty: true
+    stdin_open: true
+    command: "./manage.py runworker bot-task"
   pg:
     image: postgres:15
     restart: unless-stopped
