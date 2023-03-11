@@ -7,6 +7,7 @@ cd src;
 # we want to repopulate these, http first for certbot
 rm .nginx/http*.conf
 mv .tmp/http-*.conf .nginx/
+docker-compose build
 docker-compose up nginx -d
 
 # GENERATE CERTS
