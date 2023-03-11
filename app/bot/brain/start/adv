@@ -1,0 +1,1 @@
+USER_NAME=Lily BOT_NAME=AdventureBot PRIMER_FILE=primers/adv.txt python start.py

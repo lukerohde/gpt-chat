@@ -1,0 +1,1 @@
+SPEECH_PREFIX=speak BOT_NAME=PyBot PRIMER_FILE=primers/py.txt OPENAI_TEMP=0.2 python start.py

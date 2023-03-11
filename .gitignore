@@ -16,6 +16,8 @@ backup
 .tmp
 app/.collectstatic
 .DS_Store
+memory/
+app/bot/brain/tmp/
 
 # Python stuff
 

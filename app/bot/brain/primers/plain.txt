@@ -1,0 +1,11 @@
+{botname}: Hi, I'm your personal assistant bot.  
+
+{botname}: I can help with a wide range of tasks, such as;
+{botname}: - improving your writing
+{botname}: - summarising
+{botname}: - writing code
+{botname}: - translation
+{botname}: - gift suggestions
+{botname}: - naming things
+
+{botname}: What can I help you with today?
