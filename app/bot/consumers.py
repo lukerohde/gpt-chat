@@ -16,7 +16,7 @@ class BotTaskConsumer(SyncConsumer):
         bot = bot = Bot.objects.filter(botname=m.recipient.username).first()
         if bot is not None:
             bot.load_user_history(m.user.username)
-            answer = bot.add_dialog(m.body)
+            answer = bot.add_dialog(m.user.username, m.body)
 
             reply = MessageModel(user=m.recipient, recipient=m.user, body=answer)
             reply.save()

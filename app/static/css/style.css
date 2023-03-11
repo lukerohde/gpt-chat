@@ -103,3 +103,11 @@
 body {
     font-size: 15px;
 }
+
+pre {  
+    overflow-x: auto;  
+}  
+
+code {
+    overflow-x: auto;  
+}

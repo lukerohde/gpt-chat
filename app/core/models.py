@@ -46,7 +46,9 @@ class MessageModel(Model):
         
         # temp hack
         if "bot" in self.recipient.username:
-            async_to_sync(channel_layer.send)('bot-task', {'type': 'add_dialog', 'message.id': '{}'.format(self.id)})
+            signal = {'type': 'add_dialog', 'message.id': '{}'.format(self.id)}
+            print(signal)
+            async_to_sync(channel_layer.send)('bot-task', signal)
     
     def save(self, *args, **kwargs):
         """

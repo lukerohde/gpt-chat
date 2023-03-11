@@ -42,6 +42,7 @@ function getConversation(recipient) {
         for (let i = data['results'].length - 1; i >= 0; i--) {
             drawMessage(data['results'][i]);
         }
+        hljs.highlightAll();
         messageList.animate({scrollTop: messageList.prop('scrollHeight')});
     });
 
@@ -53,6 +54,7 @@ function getMessageById(message) {
         if (data.user === currentRecipient ||
             (data.recipient === currentRecipient && data.user == currentUser)) {
             drawMessage(data);
+            hljs.highlightAll();
         }
         messageList.animate({scrollTop: messageList.prop('scrollHeight')});
     });
@@ -97,7 +99,7 @@ $(document).ready(function () {
         `/ws?session_key=${sessionKey}`)
 
     chatInput.keypress(function (e) {
-        if (e.keyCode == 13)
+        if (!e.shiftKey && e.keyCode == 13)
             chatButton.click();
     });
 
