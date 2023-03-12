@@ -11,6 +11,7 @@
 import os
 import json
 import datetime
+import markdown
 
 class WorkingMemory:
     def __init__(self, config, username) -> None:
@@ -137,5 +138,6 @@ class WorkingMemory:
     
     def _primer(self):
         result = self.config.primer.format(botname=self.config.botname,username=self.username)
+        result = markdown.markdown(result)
         return result
     
