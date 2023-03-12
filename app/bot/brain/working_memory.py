@@ -120,10 +120,6 @@ class WorkingMemory:
         result = f"\n".join(fm)
         return result
 
-    # def _format_memory(self, memory):
-    #     result = f"### {memory['timestamp']}\n"
-    #     result += '>' + memory['string'].replace('\n', '\n>')
-    #     return result
 
     def _format_memory(self, memory):
         result = f"### {self.config.botname} remembers {memory['timestamp']}\n"
@@ -143,65 +139,3 @@ class WorkingMemory:
         result = self.config.primer.format(botname=self.config.botname,username=self.username)
         return result
     
-    # def prompt(self):
-    #     pass
-
-
-
-    # def please_respond(self):
-    #     # I'm not sure if we want this a separate call from prompt
-    #     # I'm imagining the UI waiting till the user stops typing before responding
-    #     # I'm also imagining threaded background processing of prompts
-    #     # where the work starts while the user is typing
-    #     # and maybe, the bot can respond multiple times as background threads return (erk)
-    #     pass
-
-    # def _context_summary(self):
-    #     pass
-
-    # def _memories(self):
-    #     # the act of memorizing, adds a memory, becareful what we call
-    #     # I think it should be context and prompt
-    #     # prompt stores user inputs, containing key
-    #     pass
-
-    # def _working_memory(self, input):
-    #     # need token/length management
-    #     # the api calls here are sucky
-    #     # context_summary is one way of compressing tokens
-    #     # but context_summary might be important for memories too
-    #     result = self.primer()
-    #     context = self._context_summary() # api call to summarize recent convo
-    #     result += self.memories(context) # api call for embedding
-    #     result += context()
-    #     result += input
-
-    #     return result
-
-
-
-
-
-    #             def compose_prompt(self, primer, user_prompt, memories, history):
-    #     result = primer
-    #     formatted_memories = [ self._format_memory(item) for item in memories ]
-    #     formatted_memories = f"\n".join(formatted_memories)
-    #     result += "\n" + formatted_memories 
-    #     result += history
-    #     result += self._history_update(user_prompt, "")
-
-    #     with open("gpt_prompt.txt", "w") as f:
-    #         f.write(result)
-
-    #     return result
-
-    #     memories = self.config.long_term_memory.recall(prompt,3)
-
-
-    # def _history_update(self, user_prompt, response):
-    #     result = f"\n\n{self.config.username}: " + user_prompt + "\n"
-    #     result += f"\n\n{self.config.botname}: " + response + "\n"
-    #     return result
-
-
-

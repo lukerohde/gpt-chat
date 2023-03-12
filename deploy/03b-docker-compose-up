@@ -1,7 +1,6 @@
 #!/bin/bash
 
 cd src;
-
 . .env
 
 # we want to repopulate these, http first for certbot

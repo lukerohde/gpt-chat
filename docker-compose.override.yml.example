@@ -7,6 +7,9 @@ services:
         - app_user:/home/pyuser # for bash history etc
     ports:
       - $APP_PORT:$APP_PORT  
+  bot:
+    volumes: 
+      - ../memory:./memory
   pg:
     restart: unless-stopped
     ports:

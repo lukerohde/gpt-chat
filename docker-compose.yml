@@ -63,6 +63,8 @@ services:
     links:
       - pg
       - redis
+    volumes:
+      - bot_data:/home/pyuser/app/memory
     tty: true
     stdin_open: true
     command: "./manage.py runworker bot-task"
@@ -91,3 +93,4 @@ services:
 volumes:
   pg_data:
   redis_data:
+  bot_data:

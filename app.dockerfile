@@ -14,4 +14,5 @@ COPY ./app/requirements.txt /home/pyuser/app/requirements.txt
 RUN --mount=type=cache,target=/home/pyuser/.cache/pip pip install --user -r ./requirements.txt
 
 COPY ./app /home/pyuser/app
+RUN mkdir /home/pyuser/app/memory
 
