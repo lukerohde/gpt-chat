@@ -53,8 +53,7 @@ class WorkingMemory:
     def retrieve(self):
         
         # load our bot primer fresh everytime
-        result = "## Intro\n"
-        result += self._primer() 
+        result = self._primer() + "\n"
         
         # load memories
         memories = self._retrieve_memories()
@@ -138,6 +137,5 @@ class WorkingMemory:
     
     def _primer(self):
         result = self.config.primer.format(botname=self.config.botname,username=self.username)
-        result = markdown.markdown(result)
         return result
     

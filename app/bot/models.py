@@ -6,6 +6,7 @@ from .brain.long_term_memory import LongTermMemory
 from .brain.chatgpt import ChatGPT
 import datetime
 import secrets
+import markdown
 
 class Bot(models.Model):
 
@@ -47,6 +48,9 @@ class Bot(models.Model):
     
 
     def add_dialog(self, username, prompt):
+
+        prompt = prompt # expect user markdown
+
         self.working_memory.add_dialog(
             username,
             datetime.datetime.now(),
@@ -57,11 +61,15 @@ class Bot(models.Model):
         bot_memory += f"\n\n{self.botname}: "
         
         answer = self.openai_chat.answer(bot_memory)
-
+        
         self.working_memory.add_dialog(
             self.botname,
             datetime.datetime.now(),
             answer
         )
+
+        self.working_memory.retrieve() # just to flush the response to disk
+
+        answer = markdown.markdown(answer) # expect markdown back, and convert to HTML
         return answer
     
