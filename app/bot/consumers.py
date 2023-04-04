@@ -1,6 +1,7 @@
 from time import sleep
 from channels.consumer import SyncConsumer
 from core.models import MessageModel
+from core.utils import send_message_notifications
 from .models import Bot
 
 class BotTaskConsumer(SyncConsumer):
@@ -20,6 +21,8 @@ class BotTaskConsumer(SyncConsumer):
 
             reply = MessageModel(user=m.recipient, recipient=m.user, body=answer)
             reply.save()
+
+            send_message_notifications(reply)
 
     def get_message(self, id):
         m = MessageModel.objects.get(pk=id)

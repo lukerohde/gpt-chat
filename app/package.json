@@ -1,0 +1,23 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "![](http://g.recordit.co/JYruQDLd0h.gif)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "concurrently \"python manage.py runserver 0.0.0.0:3000\" \"parcel static/js/index.js --out-dir static/dist --public-url /static/dist --hmr-port 1235\"",
+    "dev": "parcel static/js/index.js --out-dir static/dist --public-url /static/dist --hmr-port 1235",
+    "build": "parcel build static/js/index.js --out-dir static/dist --public-url /static/dist",
+    "watch": "parcel watch static/js/index.js --out-dir static/dist --public-url /static/dist"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "stimulus": "^3.2.1"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.1",
+    "parcel-bundler": "^1.12.5"
+  }
+}

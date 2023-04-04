@@ -9,7 +9,7 @@ from rest_framework.authentication import SessionAuthentication
 from chat import settings
 from core.serializers import MessageModelSerializer, UserModelSerializer
 from core.models import MessageModel
-
+from core.utils import send_message_notifications
 
 class CsrfExemptSessionAuthentication(SessionAuthentication):
     """
@@ -37,6 +37,7 @@ class MessageModelViewSet(ModelViewSet):
     pagination_class = MessagePagination
 
     def list(self, request, *args, **kwargs):
+        
         self.queryset = self.queryset.filter(Q(recipient=request.user) |
                                              Q(user=request.user))
         target = self.request.query_params.get('target', None)
@@ -47,12 +48,18 @@ class MessageModelViewSet(ModelViewSet):
         return super(MessageModelViewSet, self).list(request, *args, **kwargs)
 
     def retrieve(self, request, *args, **kwargs):
+        
         msg = get_object_or_404(
             self.queryset.filter(Q(recipient=request.user) |
                                  Q(user=request.user),
                                  Q(pk=kwargs['pk'])))
         serializer = self.get_serializer(msg)
         return Response(serializer.data)
+    
+    def perform_create(self, serializer):
+        #import pdb; pdb.set_trace()
+        message = serializer.save()
+        send_message_notifications(message)
 
 
 class UserModelViewSet(ModelViewSet):
