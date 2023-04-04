@@ -9,6 +9,10 @@
                 <small>Pick a bot and start chatting!</small>
             </h1>
         </div>
+        <div data-controller="hello">
+            <button data-action="click->hello#greet">Say Hello</button>
+            <span data-hello-target="output"></span>
+        </div>
         <div class="row">
             <div class="col-md-4">
                 <div id="user-list" class="list-group">

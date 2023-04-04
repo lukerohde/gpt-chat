@@ -18,6 +18,8 @@ app/.collectstatic
 .DS_Store
 memory/
 app/bot/brain/tmp/
+node_modules
+app/.cache
 
 # Python stuff
 
