@@ -3,22 +3,19 @@
 
 {% block main %}
 
-    <div class="container">
+    <div class="container" data-controller="chat">
         <div class="page-header">
             <h1>Welcome to our AI Test App
                 <small>Pick a bot and start chatting!</small>
             </h1>
         </div>
-        <div data-controller="hello">
-            <button data-action="click->hello#greet">Say Hello</button>
-            <span data-hello-target="output"></span>
-        </div>
         <div class="row">
             <div class="col-md-4">
-                <div id="user-list" class="list-group">
+                <div id="user-list" class="list-group" data-chat-target="userList">
                     <a href="" class="list-group-item disabled">
                         <h4 class="list-group-item-heading">Users</h4>
                         {# Users go here #}
+                        {% include 'chat/_user_list.html' %}
                     </a>
                 </div>
             </div>
@@ -28,8 +25,8 @@
                         <h4 class="panel-title">Chat</h4>
                     </div>
                     <div>
-                        <ul id="messages" class="messages" data-chat-target="message-list">
-                            {# Messages go here #}
+                        <ul id="messages" class="messages" data-chat-target="messageList">
+                            {% include 'chat/_message_list.html' %}                                
                         </ul>
                     </div>
                     

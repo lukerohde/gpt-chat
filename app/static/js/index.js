@@ -1,8 +1,7 @@
 import { Application } from "stimulus";
 
 // Import controllers
-import HelloController from "./controllers/hello_controller";
-
+import ChatController from "./controllers/chat_controller";
 
 let application = null
 
@@ -22,4 +21,4 @@ if (!application) {
   application = Application.start() // if no application so far, start it
 }
 
-application.register("hello", HelloController);
+application.register("chat", ChatController);

@@ -3,6 +3,7 @@ from django.views.generic import TemplateView
 from django.contrib.auth.decorators import login_required
 from rest_framework.routers import DefaultRouter
 from core.api import MessageModelViewSet, UserModelViewSet
+from . import views
 
 router = DefaultRouter()
 router.register(r'message', MessageModelViewSet, basename='message-api')
@@ -13,4 +14,7 @@ urlpatterns = [
 
     path('', login_required(
         TemplateView.as_view(template_name='core/chat.html')), name='home'),
+
+    path('chat/', views.chat, name='chat'),
+    path('chat/<int:user_id>/', views.chat, name='chat'),
 ]

@@ -20,22 +20,6 @@ function updateUserList() {
     });
 }
 
-function drawMessage(message) {
-    let position = 'left';
-    const date = new Date(message.timestamp);
-    if (message.user === currentUser) position = 'right';
-    const messageItem = `
-            <li class="message ${position}">
-                <div class="avatar">${message.user}</div>
-                    <div class="text_wrapper">
-                        <div class="text">${message.body}<br>
-                            <span class="small">${date}</span>
-                    </div>
-                </div>
-            </li>`;
-    $(messageItem).appendTo('#messages');
-}
-
 function getConversation(recipient) {
     $.getJSON(`/api/v1/message/?target=${recipient}`, function (data) {
         messageList.children('.message').remove();
@@ -110,9 +94,9 @@ $(document).ready(function () {
         }
     });
 
-    socket.onmessage = function (e) {
-        getMessageById(e.data);
-    };
+    // socket.onmessage = function (e) {
+    //     getMessageById(e.data);
+    // };
 });
 
 
