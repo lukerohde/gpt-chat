@@ -1,7 +1,7 @@
 import { Controller } from "stimulus";
 
 export default class extends Controller {
-  static targets = ["messageList", "userList"];
+  static targets = ["messageList", "userList", "chatForm"];
 
   socket = null;
   currentRecipient = 0;
@@ -9,18 +9,7 @@ export default class extends Controller {
   connect() {
     this.initializeWebSocket();
     this.scrollToBottom();
-
-    $('#chat-input').keypress( (e) => {
-        if (!e.shiftKey && e.keyCode == 13)
-            $('#btn-send').click();
-    });
-
-    $('#btn-send').click( () => {
-        if ($('#chat-input').val().length > 0) {
-            this.sendMessage(currentRecipient, $('#chat-input').val());
-            $('#chat-input').val('');
-        }
-    });
+    this.currentRecipient = this.element.dataset.currentRecipient;
   }
 
   initializeWebSocket() {
@@ -33,7 +22,10 @@ export default class extends Controller {
   }
 
   handleMessageReceived(event) {
-    this.getMessageById(event.data);
+    let data = JSON.parse(event.data);
+    this.messageListTarget.insertAdjacentHTML("beforeend", data['message']);
+    this.scrollToBottom();
+    hljs.highlightAll();
   }
 
   async userClicked(event) {
@@ -42,9 +34,9 @@ export default class extends Controller {
     const selectedUserId = event.target.dataset.userId;
     this.currentRecipient = selectedUserId
 
-    let newUrl = `/chat/${selectedUserId}/`
-    console.log(newUrl);
+    let newUrl = `/${selectedUserId}/`
     window.history.replaceState({ userId: selectedUserId }, "", newUrl);
+    this.chatFormTarget.action = newUrl;
 
     this.disableInput();
     this.userListTarget.querySelector(".active")?.classList.remove("active");
@@ -62,28 +54,45 @@ export default class extends Controller {
     this.enableInput();
   }  
 
-  sendMessage(recipient, body) {
-      $.post('/api/v1/message/', {
-          recipient: recipient,
-          body: body
-      }).fail(function () {
-          alert('Error! Check console!');
-      });
-  }
+  // TODO is this form post worth it compared to an ajax post?
+  async submitForm(event) {
+    event.preventDefault();
 
+    // Prepare the form data
+    const formData = new FormData(event.target);
 
-  getMessageById(message) {
-    let id = JSON.parse(message).message
-    $.getJSON(`/api/v1/message/${id}/`, (data) => {
-        if (data.user === currentRecipient ||
-            (data.recipient === currentRecipient && data.user == currentUser)) {
-            this.drawMessage(data);
-            hljs.highlightAll();
-        }
-
-        this.scrollToBottom();
+    // Submit the form via AJAX
+    const response = await fetch(event.target.action, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'same-origin'
     });
+
+    if (response.ok) {
+      // Clear the input field
+      this.element.querySelector('#chat-input').value = '';
+
+      // Update the message list or perform other actions if necessary
+      // ...
+    } else {
+      console.error('Error submitting the form:', response.statusText);
+    }
   }
+
+  // TODO work out why this doesn't work anymore
+  // async submitForm(event) {
+  //   event.preventDefault();
+
+  //   $.post('/api/v1/message/', {
+  //       recipient: this.currentRecipient,
+  //       body: "yo yo"
+  //   }).fail(function () {
+  //       alert('Error! Check console!');
+  //   });
+  // }
 
   scrollToBottom(){
     $(this.messageListTarget).animate({
@@ -101,6 +110,4 @@ export default class extends Controller {
     $('#chat-input').prop('disabled', true);
     $('#btn-send').prop('disabled', true);
   }
-
-
 }

@@ -12,9 +12,6 @@ router.register(r'user', UserModelViewSet, basename='user-api')
 urlpatterns = [
     path(r'api/v1/', include(router.urls)),
 
-    path('', login_required(
-        TemplateView.as_view(template_name='core/chat.html')), name='home'),
-
-    path('chat/', views.chat, name='chat'),
-    path('chat/<int:user_id>/', views.chat, name='chat'),
+    path('', login_required(views.ChatView.as_view()), name='chat'),
+    path('<int:user_id>/', login_required(views.ChatView.as_view()), name='chat'),
 ]

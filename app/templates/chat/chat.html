@@ -3,7 +3,7 @@
 
 {% block main %}
 
-    <div class="container" data-controller="chat">
+    <div class="container" data-controller="chat" data-current-recipient="{{ selected_user_id }}">
         <div class="page-header">
             <h1>Welcome to our AI Test App
                 <small>Pick a bot and start chatting!</small>
@@ -14,7 +14,6 @@
                 <div id="user-list" class="list-group" data-chat-target="userList">
                     <a href="" class="list-group-item disabled">
                         <h4 class="list-group-item-heading">Users</h4>
-                        {# Users go here #}
                         {% include 'chat/_user_list.html' %}
                     </a>
                 </div>
@@ -29,20 +28,21 @@
                             {% include 'chat/_message_list.html' %}                                
                         </ul>
                     </div>
-                    
-                    <div class="panel-footer">                         
-                        <div class="input-group">                             
-                            <textarea id="chat-input" type="text" class="form-control input" placeholder="Type your message here ..." maxlength="1000" style="height: 80px;"></textarea>                             
-                            <span class="input-group-btn">                             
-                                <button class="btn btn-info btn" id="btn-send" style="height: 80px;">                                 
-                                    Send
-                                </button>                         
-                            </span>                         
-                        </div>                     
+
+                    <div class="panel-footer">
+                        <form id="chat-form" method="post" action="{% url 'chat' user_id=selected_user_id %}" data-action="submit->chat#submitForm" data-chat-target="chatForm">
+                            {% csrf_token %}
+                            <div class="input-group">
+                                {{ form.message }}
+                                <span class="input-group-btn">
+                                    <button type="submit" class="btn btn-info btn" id="btn-send" style="height: 80px;">
+                                        Send
+                                    </button>
+                                </span>
+                            </div>
+                        </form>
                     </div>
                 </div>
-
-
             </div>
         </div>
     </div>

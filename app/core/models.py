@@ -1,11 +1,6 @@
 from django.contrib.auth.models import User
 from django.db.models import (Model, TextField, DateTimeField, ForeignKey,
                               CASCADE)
-
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
-
-
 class MessageModel(Model):
     """
     This class represents a chat message. It has a owner (user), timestamp and
@@ -30,26 +25,6 @@ class MessageModel(Model):
         """
         return len(self.body)
 
-    def notify_ws_clients(self):
-        """
-        Inform client there is a new message.
-        """
-        notification = {
-            'type': 'recieve_group_message',
-            'message': '{}'.format(self.id)
-        }
-
-        channel_layer = get_channel_layer()
-        
-        async_to_sync(channel_layer.group_send)("{}".format(self.user.id), notification)
-        async_to_sync(channel_layer.group_send)("{}".format(self.recipient.id), notification)
-        
-        # temp hack
-        if "bot" in self.recipient.username:
-            signal = {'type': 'add_dialog', 'message.id': '{}'.format(self.id)}
-            print(signal)
-            async_to_sync(channel_layer.send)('bot-task', signal)
-    
     def save(self, *args, **kwargs):
         """
         Trims white spaces, saves the message and notifies the recipient via WS
@@ -58,8 +33,6 @@ class MessageModel(Model):
         new = self.id
         self.body = self.body.strip()  # Trimming whitespaces from the body
         super(MessageModel, self).save(*args, **kwargs)
-        if new is None:
-            self.notify_ws_clients()
 
     # Meta
     class Meta:

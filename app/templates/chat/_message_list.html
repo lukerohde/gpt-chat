@@ -1,5 +1,5 @@
 {% for message in messages %}
-    <li class="message {% if message.user == request.user %}right{% else %}left{% endif %}">
+    <li class="message {% if message.user == current_user %}right{% else %}left{% endif %}">
         <div class="avatar">{{ message.user }}</div>
         <div class="text_wrapper">
             <div class="text">{{ message.body }}<br>

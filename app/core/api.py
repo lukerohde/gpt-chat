@@ -9,7 +9,7 @@ from rest_framework.authentication import SessionAuthentication
 from chat import settings
 from core.serializers import MessageModelSerializer, UserModelSerializer
 from core.models import MessageModel
-
+from core.utils import send_message_notifications
 
 class CsrfExemptSessionAuthentication(SessionAuthentication):
     """
@@ -53,6 +53,10 @@ class MessageModelViewSet(ModelViewSet):
                                  Q(pk=kwargs['pk'])))
         serializer = self.get_serializer(msg)
         return Response(serializer.data)
+    
+    def perform_create(self, serializer):
+        message = serializer.save()
+        send_message_notifications(message)
 
 
 class UserModelViewSet(ModelViewSet):
