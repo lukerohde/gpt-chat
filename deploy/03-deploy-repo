@@ -37,6 +37,9 @@ ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/
 echo "Creating super user"
 ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py createsuperuser --noinput\" "
 
+echo "Package JS"
+docker-compose run app "/bin/bash" -c "npm run build"
+
 echo "Collecting files"
 docker-compose run app "/bin/bash" -c "/home/pyuser/app/manage.py collectstatic --no-input"
 
