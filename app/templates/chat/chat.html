@@ -3,45 +3,76 @@
 
 {% block main %}
 
-    <div class="container" data-controller="chat" data-current-recipient="{{ selected_user_id }}">
-        <div class="page-header">
-            <h1>Welcome to our AI Test App
-                <small>Pick a bot and start chatting!</small>
-            </h1>
-        </div>
-        <div class="row">
-            <div class="col-md-4">
+    <div class="container-fluid chat-container" data-controller="chat" data-current-recipient="{{ selected_user_id }}">
+        <header class="fixed-header">
+            <button class="hamburger-btn btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
+                <div class="hamburger-menu">
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                </div>
+            </button>
+            <a class="navbar-brand chat-name" href="{% url 'chat_default' %}">
+                <h1 class="chat-name"><i class="fa fa-comments"></i>AI Chat</h1>
+            </a>
+        </header>
+        
+        <div class="offcanvas offcanvas-start " tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel">
+            <div class="offcanvas-header d-flex justify-content-end">
+                <!-- <h5 class="offcanvas-title" id="sidebarLabel">Sidebar</h5> -->
+                <button id="sidebar-close" type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close">
+                </button>
+            </div>
+            <div class="offcanvas-body">
                 <div id="user-list" class="list-group" data-chat-target="userList">
-                    <a href="" class="list-group-item disabled">
-                        <h4 class="list-group-item-heading">Users</h4>
-                        {% include 'chat/_user_list.html' %}
+                    {% include 'chat/_user_list.html' %}
+                </div>
+                <hr/>
+                <div id="profile-list" class="list-group">
+                {% if user.is_authenticated %}
+                    <a class="list-group-item" href="#">
+                        <i class="fa fa-user-circle" aria-hidden="true"></i>
+                        {{ user.username }}
                     </a>
+                    <a class="list-group-item" href="#" data-action="click->chat#toggleTheme">
+                        <i class="fa fa-user-circle" aria-hidden="true" ></i>
+                        Toggle theme
+                    </a>
+                    <a class="list-group-item" href="{% url 'logout' %}">
+                        <i class="fa fa-sign-out" aria-hidden="true"></i>
+                        Log Out
+                    </a>
+                {% else %}
+                    <a class="list-group-item" href="{% url 'login' %}">
+                        <i class="fa fa-sign-in" aria-hidden="true"></i>
+                        Log In
+                    </a>
+                {% endif %}
                 </div>
             </div>
-            <div class="col-md-8">
-                <div class="panel panel-info">
-                    <div class="panel-heading">
-                        <h4 class="panel-title">Chat</h4>
-                    </div>
-                    <div>
+        </div>
+        
+        <div class="row chat-pane">
+            <div class="col-12 d-flex flex-column">
+                <div class="card flex-grow-1">
+                    <div class="card-body chat-card-body">
                         <ul id="messages" class="messages" data-chat-target="messageList">
                             {% include 'chat/_message_list.html' %}                                
                         </ul>
                     </div>
-
-                    <div class="panel-footer">
-                        <form id="chat-form" method="post" action="{% url 'chat' user_id=selected_user_id %}" data-action="submit->chat#submitForm" data-chat-target="chatForm">
-                            {% csrf_token %}
-                            <div class="input-group">
-                                {{ form.message }}
-                                <span class="input-group-btn">
-                                    <button type="submit" class="btn btn-info btn" id="btn-send" style="height: 80px;">
-                                        Send
-                                    </button>
-                                </span>
-                            </div>
-                        </form>
-                    </div>
+                </div>
+                <div class="card-footer">
+                    <form id="chat-form" method="post" action="{% url 'chat' user_id=selected_user_id %}" data-action="submit->chat#submitForm" data-chat-target="chatForm">
+                        {% csrf_token %}
+                        <div class="input-group chat-input-row">
+                            {{ form.message }}
+                            <span class="input-group-btn">
+                                <button type="submit" class="btn btn-primary btn" id="btn-send">
+                                    Send
+                                </button>
+                            </span>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

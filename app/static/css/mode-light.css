@@ -1,0 +1,90 @@
+:root {
+    --brand-color: #5B9BD5;
+    --complementary-color-1: #273e54;
+    --complementary-color-2: #AED6F1;
+    --complementary-color-3: #A3E4D7;
+    --complementary-color-4: #FDEDEC;
+    --complementary-color-5: #1C2833;
+
+}
+
+.fixed-header {
+    background-color: var(--complementary-color-1);
+    color: var(--complementary-color-4);
+}
+
+.chat-pane {
+    background-color: var(--complementary-color-2);
+}
+
+.card { 
+    background-color: var(--complementary-color-2) !important;
+    overflow: hidden;
+}
+
+.chat-container {
+    background-color: var(--complementary-color-2);
+}
+
+.hamburger-btn {
+    background-color: var(--complementary-color-4);
+    border: none;
+}
+
+.hamburger-btn:hover {
+    background-color: var(--complementary-color-3);
+}
+
+
+li.message { 
+    background: var(--complementary-color-3); 
+    color: var(--complementary-color-1);
+}
+
+li.message:nth-child(odd) { background: var(--complementary-color-4); }
+
+#chat-input { 
+    background: var(--complementary-color-1); 
+    border-color: var(--complementary-color-1);
+    color: var(--complementary-color-4);
+}
+
+#chat-input:focus {
+    box-shadow: none;
+}
+
+#btn-send {
+    background-color: var(--complementary-color-4);
+    border-color: var(--complementary-color-4);
+    color: var(--complementary-color-1);
+}
+  
+#btn-send:hover,
+#btn-send:focus,
+#btn-send:active {
+  background-color: var(--complementary-color-3); /* Replace with your desired hover background color */
+  border-color: var(--complementary-color-3); /* Replace with your desired hover border color */
+}
+
+.offcanvas { 
+    background-color: var(--brand-color) !important; /* Replace with your desired hover background color */
+}
+
+.list-group-item { 
+    background: var(--complementary-color-4); 
+    color: var(--complementary-color-1);
+}
+
+.list-group-item.active {
+    background-color: var(--complementary-color-2) !important; /* Replace with your desired hover background color */
+    border-color:  var(--complementary-color-2) !important;
+    color: var(--complementary-color-5);
+}
+
+.list-group-item:hover,
+.list-group-item:focus,
+.list-group-item:active {
+  background-color: var(--complementary-color-3); /* Replace with your desired hover background color */
+  border-color: var(--complementary-color-3); /* Replace with your desired hover border color */
+  color: var(--complementary-color-5);
+}

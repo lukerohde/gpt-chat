@@ -7,10 +7,12 @@ export default class extends Controller {
   currentRecipient = 0;
   
   connect() {
+    this.restoreTheme();
     this.handleMessageReceivedBound = this.handleMessageReceived.bind(this);
     this.initializeWebSocket();
     this.scrollToBottom();
     this.currentRecipient = this.element.dataset.currentRecipient;
+    hljs.highlightAll();
   }
 
   disconnect() {
@@ -61,6 +63,7 @@ export default class extends Controller {
     
     event.target.classList.add("active");
     this.scrollToBottom();
+    hljs.highlightAll();
     this.enableInput();
   }  
 
@@ -104,5 +107,27 @@ export default class extends Controller {
   disableInput() {
     document.getElementById('chat-input').disabled = true;
     document.getElementById('btn-send').disabled = true;
+  }
+
+  toggleTheme(event) {
+    event.preventDefault();
+    const themeStylesheet = document.getElementById('theme-stylesheet');
+    const currentTheme = themeStylesheet.getAttribute('href');
+    let newTheme;
+    if (currentTheme === '/static/css/mode-light.css') {
+        newTheme = '/static/css/mode-dark.css';
+    } else {
+        newTheme = '/static/css/mode-light.css';
+    }
+    themeStylesheet.setAttribute("href", newTheme)
+    localStorage.setItem("theme", newTheme); // Save the theme preference in localStorage
+  }
+
+  restoreTheme() {
+    const themeStylesheet = document.getElementById("theme-stylesheet");
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) {
+      themeStylesheet.setAttribute("href", savedTheme);
+    }
   }
 }

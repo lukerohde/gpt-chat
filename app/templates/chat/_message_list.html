@@ -1,10 +1,10 @@
 {% for message in messages %}
-    <li class="message {% if message.user == current_user %}right{% else %}left{% endif %}">
-        <div class="avatar">{{ message.user }}</div>
-        <div class="text_wrapper">
-            <div class="text">{{ message.body }}<br>
-                <span class="small">{{ message.timestamp|date:"Y-m-d H:i" }}</span>
-            </div>
+    <li class="message mb-3">
+        <div class="message-metadata small d-block text-start text-muted">{{ message.user }}</div>
+        <div class="text p-2">
+            {{ message.body|safe }}
+            <br>
         </div>
+        <span class="message-metadata small d-block text-end text-muted">{{ message.timestamp|date:"Y-m-d H:i" }}</span>
     </li>
 {% endfor %}
