@@ -18,6 +18,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='bot',
             name='openai_api_key',
-            field=models.CharField(default='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', max_length=100),
+            field=models.CharField(max_length=100),
         ),
     ]
