@@ -3,6 +3,7 @@ import os
 import sys
 import traceback
 import argparse
+import asyncio
 from typing import Any, Dict, Optional
 from bot_redis import RedisQueueManager
 
@@ -16,20 +17,26 @@ class Step:
         self.outbox = f"{bot_name}_{step_name}_outbox"
         self.dlq = f"{bot_name}_{step_name}_dlq"
 
-    def run(self, payload: Dict) -> Dict:
+    def process(self, payload: Dict) -> Dict:
         raise NotImplementedError("Please implement the `process` method in your step subclass.")
 
-    def listen(self) -> None:
+    async def listen(self) -> None:
         while True:
-            payload = self.queue_manager.blocking_dequeue(self.inbox)
-            try:
-                result = self.process(payload)
-                self.queue_manager.enqueue(self.outbox, result)
-            except Exception as e:
-                error_message = str(e)
-                stacktrace = traceback.format_exc()
-                self.queue_manager.enqueue(self.dlq, {"payload": payload, "error_message": error_message, "stacktrace": stacktrace})
+            payload = await self.queue_manager.async_dequeue(self.inbox)
+            if payload:
+                try:
+                    result = self.process(payload)
+                    await self.queue_manager.async_enqueue(self.outbox, result)
+                except Exception as e:
+                    error_message = str(e)
+                    stacktrace = traceback.format_exc()
+                    await self.queue_manager.async_enqueue(self.dlq, {"payload": payload, "error_message": error_message, "stacktrace": stacktrace})
+                    print(f"Error enqueued into {self.dlq}")
 
+    async def stop(self):
+        await self.queue_manager.stop()
+    
+    
     @classmethod
     def main(cls):
         
@@ -45,7 +52,7 @@ class Step:
         if args.payload:
             with open(args.payload, 'r') as f:
                 payload = json.load(f)
-            instance.run(payload)
+            instance.process(payload)
         else:
             print(f'Listening on {instance.inbox}')
             instance.listen()

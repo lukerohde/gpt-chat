@@ -8,7 +8,8 @@ import json
 import argparse
 from pathlib import Path
 from typing import Any, Dict, Optional, Type
-
+from channels.layers import get_channel_layer
+from aiohttp import web, ClientSession
 
 from bot_step import Step
 from bot_redis import RedisQueueManager
@@ -36,6 +37,15 @@ class Bot:
         self.load_step_classes()
         self.instantiate_steps()
         self.pause_event = asyncio.Event()
+
+        self.app_server = None
+
+    async def receive_message(self, request):
+        print(f"{request.scheme} {request.method} {request.path}")
+        payload = await request.json()
+        await self.queue_manager.async_enqueue(self.inbox, payload)
+        return web.json_response({'status': 'ok'})
+
 
     def load_config(self) -> None:
         with open(self.config_path, 'r') as f:
@@ -88,6 +98,19 @@ class Bot:
         await self.listen()
         print('process_async')
 
+
+    async def send_message_to_django_app(self, reply):
+        async with ClientSession() as session:
+            url = 'http://app:3000/api/v1/message/'
+        
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Token eca28c8b7c8ce3b426ef105ec3aef8af90f6aeda',
+            }
+            async with session.post(url, data=json.dumps(reply), headers=headers) as response:
+                return await response.json()
+
+
     async def listen(self) -> None:
         print('listening...')
         while True:
@@ -105,7 +128,7 @@ class Bot:
                         if next_step:
                             await self.queue_manager.async_enqueue(next_step.inbox, payload)
                         else:
-                            await self.queue_manager.async_enqueue(self.outbox, payload)
+                            await self.send_message_to_django_app(payload["reply"])
 
             async def handle_step_dlq(step: Step):
                 while True:
@@ -151,6 +174,16 @@ class Bot:
     #             "path": str(Path(event.src_path)),
     #         })
 
+    async def get_app_server(self, host: Optional[str] = '0.0.0.0', port: Optional[int] = '8001'):
+        self.app_server = web.Application()
+        self.app_server.router.add_post(f"/api/message/{self.config['name']}/", self.receive_message)
+
+        server = web.AppRunner(self.app_server)
+        await server.setup()
+        site = web.TCPSite(server, host=host, port=port)
+        await site.start()
+        return site
+
     @classmethod
     def main(cls):
         
@@ -176,12 +209,19 @@ class Bot:
         if args.payload: 
             with open(args.payload, 'r') as f:
                 payload = json.load(f)
+
             
         if args.sync:    
             bot.process(payload)
         else:
             try:
-                loop.run_until_complete(bot.process_async(payload))
+                tasks = [
+                    bot.get_app_server(),
+                    bot.process_async(payload)
+                ]
+
+                loop.run_until_complete(asyncio.gather(*tasks))
+                #loop.run_until_complete(bot.get_app_server())
             except KeyboardInterrupt:
                 print("Shutting down gracefully...")
             finally: 

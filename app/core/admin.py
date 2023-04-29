@@ -1,6 +1,6 @@
 from django.contrib.admin import ModelAdmin, site
+from rest_framework.authtoken.models import Token
 from core.models import MessageModel
-
 
 class MessageModelAdmin(ModelAdmin):
     readonly_fields = ('timestamp',)

@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.authentication import SessionAuthentication
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 
 from chat import settings
 from core.serializers import MessageModelSerializer, UserModelSerializer
@@ -33,7 +33,7 @@ class MessageModelViewSet(ModelViewSet):
     queryset = MessageModel.objects.all()
     serializer_class = MessageModelSerializer
     allowed_methods = ('GET', 'POST', 'HEAD', 'OPTIONS')
-    authentication_classes = (CsrfExemptSessionAuthentication,)
+    authentication_classes = (CsrfExemptSessionAuthentication,TokenAuthentication)
     pagination_class = MessagePagination
 
     def list(self, request, *args, **kwargs):

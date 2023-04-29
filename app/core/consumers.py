@@ -2,6 +2,9 @@
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
+from core.models import MessageModel
+from core.utils import send_message_notifications
+
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -24,18 +27,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
-    # Receive message from WebSocket
-    async def receive(self, text_data=None,bytes_data = None):
-        text_data_json = json.loads(text_data)
-        message = text_data_json['message']
-        # Send message to room group
-        await self.channel_layer.group_send(
-            self.chat_group_name,
-            {
-                'type': 'recieve_group_message',
-                'message': message
-            }
-        )
+    # # Receive message from WebSocket
+    # async def receive(self, text_data=None,bytes_data = None):
+    #     text_data_json = json.loads(text_data)
+    #     message = text_data_json['message']
+    #     # Send message to room group
+    #     await self.channel_layer.group_send(
+    #         self.chat_group_name,
+    #         {
+    #             'type': 'recieve_group_message',
+    #             'message': message
+    #         }
+    #     )
 
     async def recieve_group_message(self, event):
         message = event['message']

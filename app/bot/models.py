@@ -12,6 +12,7 @@ class Bot(models.Model):
 
     botname = models.CharField(max_length=100, default=os.getenv("BOT_NAME"))
     primer = models.TextField()
+    end_point = models.CharField(max_length=255, default=f"http://localhost:8001/api/message/{os.getenv('BOT_NAME')}")
     openai_api_key = models.CharField(max_length=100, default=os.getenv("OPENAI_API_KEY"))
     openai_completion_model = models.CharField(max_length=100, default=os.getenv("OPENAI_COMPLETION_MODEL") or "text-davinci-003")
     openai_embedding_model = models.CharField(max_length=100, default=os.getenv("OPENAI_EMBEDDING_MODEL") or "text-embedding-ada-002")
