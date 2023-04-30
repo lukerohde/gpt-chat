@@ -17,7 +17,7 @@ class Step:
         self.outbox = f"{bot_name}_{step_name}_outbox"
         self.dlq = f"{bot_name}_{step_name}_dlq"
 
-    def process(self, payload: Dict) -> Dict:
+    async def process(self, payload):
         raise NotImplementedError("Please implement the `process` method in your step subclass.")
 
     async def listen(self) -> None:
@@ -25,13 +25,15 @@ class Step:
             payload = await self.queue_manager.async_dequeue(self.inbox)
             if payload:
                 try:
-                    result = self.process(payload)
+                    result = await self.process(payload)
                     await self.queue_manager.async_enqueue(self.outbox, result)
                 except Exception as e:
                     error_message = str(e)
                     stacktrace = traceback.format_exc()
                     await self.queue_manager.async_enqueue(self.dlq, {"payload": payload, "error_message": error_message, "stacktrace": stacktrace})
                     print(f"Error enqueued into {self.dlq}")
+                    print(f"{error_message}")
+                    
 
     async def stop(self):
         await self.queue_manager.stop()

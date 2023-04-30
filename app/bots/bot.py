@@ -110,6 +110,11 @@ class Bot:
             async with session.post(url, data=json.dumps(reply), headers=headers) as response:
                 return await response.json()
 
+    def send_status_update(self, outbox_name, payload):
+        with open(f'{outbox_name}.json', 'w') as fp:
+            json.dump(payload, fp, indent=2)
+        
+        print(f"{outbox_name} done.  Saved output to {outbox_name}.json.")
 
     async def listen(self) -> None:
         print('listening...')
@@ -125,6 +130,8 @@ class Bot:
                 while True:
                     payload = await self.queue_manager.async_dequeue(step.outbox)
                     if payload:
+                        self.send_status_update(step.outbox, payload)
+
                         if next_step:
                             await self.queue_manager.async_enqueue(next_step.inbox, payload)
                         else:
@@ -135,10 +142,12 @@ class Bot:
                     payload = await self.queue_manager.async_dequeue(step.dlq)
                     
                     if payload:
+                        self.send_status_update(step.outbox, payload)
+
                         print(f"Error in {step.step_name}.")
-                        print(f"payload:\n{json.dumps(payload['payload'], indent=2)}")
                         print(f"\n\n{payload['error_message']}")
-                        print(f"\n\n{payload['stacktrace']}\n")
+                        
+                    if self.debug:
                         print("Loading pdb debugger...")
                         
                         import pdb; pdb.set_trace()
@@ -150,8 +159,8 @@ class Bot:
                 next_step = self.steps[i + 1] if i + 1 < len(self.steps) else None
                 tasks.append(step.listen())
                 tasks.append(handle_step_outbox(step, next_step))
-                if self.debug:
-                    tasks.append(handle_step_dlq(step))
+                tasks.append(handle_step_dlq(step)) 
+
 
             await asyncio.gather(*tasks)
 

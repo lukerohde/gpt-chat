@@ -8,6 +8,8 @@ import aiohttp
 import asyncio
 from bot.models import Bot
 from rest_framework.authtoken.models import Token
+from core.models import MessageModel
+from django.db.models import Q
 
 def web_client_notification(message, recipient):
     html = render_to_string('chat/_message_list.html', {'messages': [message,], 'current_user': recipient})
@@ -17,29 +19,30 @@ def web_client_notification(message, recipient):
     }
     return notification
 
-def bot_notification(message):
-    payload = {
-        'user': message.user.username,
-        'recipient': message.recipient.username, 
-        'body': message.body
-    }
+def bot_notification(messages):
+    
+    payload = [{
+        'user': m.user.username,
+        'recipient': m.recipient.username, 
+        'body': m.body
+    } for m in messages ]
+
     notification = {
         'type': 'direct_message',
-        'reply_to': f"asgi:group:{message.user.id}",
-        'message': payload
+        'reply_to': f"TBD",
+        'messages': payload
     }
     return notification
 
-async def send_message_to_bot(bot, message):
+async def send_message_to_bot(bot, notification):
     async with aiohttp.ClientSession() as session:
         url = bot.end_point
-        data = bot_notification(message)
-    
+        
         headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Token xxx',
         }
-        async with session.post(url, data=json.dumps(data), headers=headers) as response:
+        async with session.post(url, data=json.dumps(notification), headers=headers) as response:
             return await response.text()
 
 def send_message_notifications(message):
@@ -52,6 +55,12 @@ def send_message_notifications(message):
     
     bot = Bot.objects.filter(botname=message.recipient.username).first()
     result = None
+
     if bot:
-        result = async_to_sync(send_message_to_bot)(bot, message)
+        message_history = MessageModel.objects.filter(
+                    Q(recipient=message.recipient, user=message.user) |
+                    Q(recipient=message.user, user=message.recipient)
+                ).order_by('-timestamp')[:10][::-1]
+
+        result = async_to_sync(send_message_to_bot)(bot, bot_notification(message_history))
     return result

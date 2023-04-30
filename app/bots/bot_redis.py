@@ -42,7 +42,7 @@ class RedisQueueManager:
     async def async_dequeue(self, queue_name: str) -> Optional[Dict]:
         async_redis = await self.get_async_redis()
         payload = await async_redis.lpop(queue_name)
-        await asyncio.sleep(0.1) # this sucks, but async_blocking_dequeue doesn't seem to work
+        await asyncio.sleep(0.01) # this sucks, but async_blocking_dequeue doesn't seem to work
         return json.loads(payload) if payload else None
 
     async def async_blocking_dequeue(self, queue_name: str) -> Dict:

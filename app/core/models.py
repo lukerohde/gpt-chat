@@ -1,6 +1,9 @@
 from django.contrib.auth.models import User
 from django.db.models import (Model, TextField, DateTimeField, ForeignKey,
                               CASCADE)
+import markdown
+import bleach
+
 class MessageModel(Model):
     """
     This class represents a chat message. It has a owner (user), timestamp and
@@ -24,6 +27,10 @@ class MessageModel(Model):
         :return: body's char number
         """
         return len(self.body)
+    
+    def markdown(self):
+        sanitized_body = bleach.clean(self.body)
+        return markdown.markdown(sanitized_body, extensions=['fenced_code'])
 
     def save(self, *args, **kwargs):
         """

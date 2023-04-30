@@ -5,3 +5,4 @@ max_tokens: 500
 steps:
   - "step1"
   - "step2"
+  - "step3"
