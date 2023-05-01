@@ -67,7 +67,8 @@ services:
       - bot_data:/home/pyuser/app/memory
     tty: true
     stdin_open: true
-    command: "./manage.py runworker bot-task"
+    #command: "./manage.py runworker bot-task"
+    command: "python bots/bot.py --bot_file bots/bot1.yaml"
   pg:
     image: postgres:15
     restart: unless-stopped
