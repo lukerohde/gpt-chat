@@ -9,29 +9,23 @@ import argparse
 from pathlib import Path
 from typing import Any, Dict, Optional, Type
 from channels.layers import get_channel_layer
+from box import Box
 from aiohttp import web, ClientSession
+
 
 from bot_step import Step
 from bot_redis import RedisQueueManager
-
-# from watchdog.observers import Observer
-# from watchdog.events import FileSystemEventHandler
-
-
+from bot_server import BotServer
 
 class Bot:
-    def __init__(self, config_path: str, queue_manager: Optional[Any] = None, external_steps: Optional[Dict[str, Type[Step]]] = None):
-        self.config_path = config_path
+    def __init__(self, config: Dict[str, Any], queue_manager: Optional[Any] = None, bot_server: Optional[BotServer] = None):
+        self.config = Box(config)
         self.queue_manager = queue_manager or RedisQueueManager()
-        self.external_steps = external_steps or {}
+        self.server = bot_server or BotServer()
+        self.server.register_route(f"/api/message/{self.config.name}/", self.receive_message)
         self.steps = []
         self.step_classes = {}
         self.debug = False
-        #self.watcher = Observer()
-        #event_handler = FileSystemEventHandler()
-        #event_handler.on_modified = self.on_modified
-        #self.watcher.schedule(event_handler, ".", recursive=True)
-        #self.watcher.start()
 
         self.load_config()
         self.load_step_classes()
@@ -44,54 +38,60 @@ class Bot:
         print(f"{request.scheme} {request.method} {request.path}")
         payload = await request.json()
         await self.queue_manager.async_enqueue(self.inbox, payload)
-        return web.json_response({'status': 'ok'})
-
-
+        return self.server.web.json_response({'status': 'ok'})
+    
     def load_config(self) -> None:
-        with open(self.config_path, 'r') as f:
-            self.config = yaml.safe_load(f)
-
-        self.inbox = f"{self.config['name']}_inbox"
-        self.outbox = f"{self.config['name']}_outbox"
+        self.bot_name = self.config.name
+        self.inbox = f"{self.config.name}_inbox"
+        self.outbox = f"{self.config.name}_outbox"
         
 
-    def load_step_classes(self) -> None:
-        step_files = glob.glob(os.path.join(os.path.dirname(self.config_path), "*.py"))
+    def load_step_classes(self) -> Dict[str, Type[Step]]:
+        step_classes = {}
+        step_files = glob.glob(os.path.join(self.config.step_path, "*.py"))
+
         for step_file in step_files:
             module_name = os.path.splitext(os.path.basename(step_file))[0]
             print(f'inspecting {module_name}')
+
             if module_name == "__init__":
                 continue
-            step_module = importlib.import_module(module_name)
-            step_class = None
-            for key, value in step_module.__dict__.items():
+
+            # Load the module
+            spec = importlib.util.spec_from_file_location(module_name, step_file)
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
+
+            # Find the Step subclass in the module
+            for key, value in module.__dict__.items():
                 if isinstance(value, type) and issubclass(value, Step) and value != Step:
                     step_class = value
+                    print(f'Found {step_class}')
+                    self.step_classes[step_class.__name__] = step_class
                     break
-            if step_class:
-                print(f'Found {step_class}')
-                self.step_classes[module_name] = step_class
 
-    def reload_steps(self):
-        for step_module in self.step_classes.values():
-            importlib.reload(step_module)
-        self.instantiate_steps()
-
+        return step_classes
+    
     def instantiate_steps(self) -> None:
         self.steps = []
-        for step_name in self.config["steps"]:
-            step_class = self.step_classes.get(step_name) or self.external_steps.get(step_name)
+        for st in self.config.steps:
+            step_name = st.get('class')
+            step_class = self.step_classes.get(step_name)
             if step_class:
-                print(f'Loading {step_class}')
-                step_instance = step_class(self.config["name"], step_name, self.queue_manager)
+                print(f"Loading {step_class}")
+                step_config = getattr(st, 'config', Box({}))
+                step_instance = step_class(self.bot_name, step_name, self.queue_manager, step_config.to_dict())
                 self.steps.append(step_instance)
+            else:
+                print(f'WARNING: No "{step_name}" class found!')
 
     def process(self, payload: Dict) -> Dict:
         for step in self.steps:
             payload = step.process(payload)
         return payload
     
-    async def process_async(self, payload: Dict) -> Dict:
+    async def process_async(self, payload: Optional[Dict] = {}) -> Dict:
         if payload:
             await self.queue_manager.async_enqueue(self.inbox, payload)
         
@@ -117,7 +117,6 @@ class Bot:
         print(f"{outbox_name} done.  Saved output to {outbox_name}.json.")
 
     async def listen(self) -> None:
-        print('listening...')
         while True:
             
             async def handle_bot_inbox():
@@ -169,49 +168,35 @@ class Bot:
         for step in self.steps:
             await step.stop()
 
-    # async def watch(self):
-    #     while True:
-    #         event = await self.queue_manager.async_dequeue("bot_file_change")
-    #         if event["type"] == "modified" and Path(event["path"]).suffix == ".py":
-    #             self.reload_steps()
-    #             self.pause_event.set()
-
-    # def on_modified(self, event):
-    #     if event.src_path.endswith(".py"):
-    #         self.queue_manager.enqueue("bot_file_change", {
-    #             "type": "modified",
-    #             "path": str(Path(event.src_path)),
-    #         })
-
-    async def get_app_server(self, host: Optional[str] = '0.0.0.0', port: Optional[int] = '8001'):
-        self.app_server = web.Application()
-        self.app_server.router.add_post(f"/api/message/{self.config['name']}/", self.receive_message)
-
-        server = web.AppRunner(self.app_server)
-        await server.setup()
-        site = web.TCPSite(server, host=host, port=port)
-        await site.start()
-        return site
 
     @classmethod
     def main(cls):
         
         parser = argparse.ArgumentParser(description="Bot manager")
         parser.add_argument('--bot_file', type=str, help='Path to bot definition yaml file', required=False)
+        parser.add_argument('--step_path', type=str, help='Path to bot definition yaml file', required=False)
         parser.add_argument('--payload', type=str, help='Path to json payload to process', required=False)
         parser.add_argument("--sync", action="store_true", help="Enable sync mode bypassing redis.")
         parser.add_argument("--debug", action="store_true", help="Break into debug mode on failure.")
 
         args = parser.parse_args()
-        config_path = args.bot_file or os.path.join(os.path.dirname(__file__), "bot.yaml")
+        config_path = args.bot_file or os.path.join(os.path.dirname(__file__), "config", "bot.yaml")
+        step_path = args.step_path or os.path.join(os.path.dirname(__file__), "steps")
         
+        config = {}
+
         if not os.path.isfile(config_path):
             parser.print_usage()
             print(f"The file '{config_path}' does not exist.")
             return 
-        
+        else:
+            with open(config_path, 'r') as f:
+                config = yaml.safe_load(f)
+
+        config['step_path']=step_path
         loop = asyncio.get_event_loop()
-        bot = Bot(config_path)
+        
+        bot = Bot(config)
         bot.debug = args.debug
                    
         payload = None
@@ -225,12 +210,11 @@ class Bot:
         else:
             try:
                 tasks = [
-                    bot.get_app_server(),
+                    bot.server.start(),
                     bot.process_async(payload)
                 ]
 
                 loop.run_until_complete(asyncio.gather(*tasks))
-                #loop.run_until_complete(bot.get_app_server())
             except KeyboardInterrupt:
                 print("Shutting down gracefully...")
             finally: 

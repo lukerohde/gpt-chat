@@ -5,7 +5,7 @@ import json
 import os
 from aiohttp import ClientSession
 
-class Step2(Step):
+class Gpt(Step):
 
     async def process(self, payload):
         payload['openai'] = await self._ask_openai(payload['chatml'])
@@ -25,7 +25,7 @@ class Step2(Step):
             }
 
             payload = {
-                "model": "gpt-4",
+                "model": self.config.model or "gpt-4",
                 "messages": messages
             }
 

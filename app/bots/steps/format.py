@@ -1,6 +1,6 @@
 from bot_step import Step
      
-class Step1(Step):
+class Format(Step):
 
     async def process(self, payload):
         messages=payload['messages']

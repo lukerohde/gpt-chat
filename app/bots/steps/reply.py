@@ -1,6 +1,6 @@
 from bot_step import Step
       
-class Step3(Step):
+class Reply(Step):
     
     async def process(self, payload):
         

@@ -6,17 +6,19 @@ import argparse
 import asyncio
 from typing import Any, Dict, Optional
 from bot_redis import RedisQueueManager
+from box import Box
 
 class Step:
-    def __init__(self, bot_name: str, step_name: str, queue_manager: Optional[Any] = None):
+    def __init__(self, bot_name: str, step_name: str, queue_manager: Optional[Any] = None, config: Dict = {}):
         self.bot_name = bot_name
         self.step_name = step_name
         self.queue_manager = queue_manager or RedisQueueManager()
+        self.config = Box(config)
 
         self.inbox = f"{bot_name}_{step_name}_inbox"
         self.outbox = f"{bot_name}_{step_name}_outbox"
         self.dlq = f"{bot_name}_{step_name}_dlq"
-
+    
     async def process(self, payload):
         raise NotImplementedError("Please implement the `process` method in your step subclass.")
 

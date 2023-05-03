@@ -1,8 +1,0 @@
-name: "japbot"
-model: "text-davinci-003"
-temperature: 0.8
-max_tokens: 500
-steps:
-  - "step1"
-  - "step2"
-  - "step3"
