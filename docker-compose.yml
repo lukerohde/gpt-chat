@@ -60,6 +60,7 @@ services:
       - OPENAI_TEMPERATURE
       - OPENAI_RESPONSE_TOKENS
       - OPENAI_MAX_TOKENS
+      - PYTHONPATH=/home/pyuser/app
     links:
       - pg
       - redis
@@ -68,7 +69,7 @@ services:
     tty: true
     stdin_open: true
     #command: "./manage.py runworker bot-task"
-    command: "python bots/bot.py --bot_file bots/bot1.yaml"
+    command: "python bot_manager/bot_runner.py"
   pg:
     image: postgres:15
     restart: unless-stopped

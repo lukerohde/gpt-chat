@@ -13,9 +13,9 @@ from box import Box
 from aiohttp import web, ClientSession
 
 
-from bot_step import Step
-from bot_redis import RedisQueueManager
-from bot_server import BotServer
+from bot_manager.bot_step import Step
+from bot_manager.bot_redis import RedisQueueManager
+from bot_manager.bot_server import BotServer
 
 class Bot:
     def __init__(self, config: Dict[str, Any], queue_manager: Optional[Any] = None, bot_server: Optional[BotServer] = None):
@@ -105,16 +105,20 @@ class Bot:
         
             headers = {
                 'Content-Type': 'application/json',
-                'Authorization': f'Token eca28c8b7c8ce3b426ef105ec3aef8af90f6aeda',
+                'Authorization': f'Token {self.config.token}',
             }
             async with session.post(url, data=json.dumps(reply), headers=headers) as response:
                 return await response.json()
 
-    def send_status_update(self, outbox_name, payload):
-        with open(f'{outbox_name}.json', 'w') as fp:
+    async def send_update(self, mailbox, payload):
+        with open(f'{mailbox}.json', 'w') as fp:
             json.dump(payload, fp, indent=2)
         
-        print(f"{outbox_name} done.  Saved output to {outbox_name}.json.")
+        print(f"Saved {mailbox}.json.")
+
+        if 'reply' in payload:
+            await self.send_message_to_django_app(payload["reply"])
+            del payload["reply"]
 
     async def listen(self) -> None:
         while True:
@@ -122,35 +126,37 @@ class Bot:
             async def handle_bot_inbox():
                 while True:
                     payload = await self.queue_manager.async_dequeue(self.inbox)
-                    if payload:    
+                    if payload: 
+                        await self.send_update(self.inbox, payload) 
                         await self.queue_manager.async_enqueue(self.steps[0].inbox, payload)
 
             async def handle_step_outbox(step: Step, next_step: Optional[Step]):
                 while True:
                     payload = await self.queue_manager.async_dequeue(step.outbox)
                     if payload:
-                        self.send_status_update(step.outbox, payload)
-
+                        await self.send_update(step.outbox, payload)
+                        
                         if next_step:
                             await self.queue_manager.async_enqueue(next_step.inbox, payload)
-                        else:
-                            await self.send_message_to_django_app(payload["reply"])
+                        
+
+                            
 
             async def handle_step_dlq(step: Step):
                 while True:
                     payload = await self.queue_manager.async_dequeue(step.dlq)
                     
                     if payload:
-                        self.send_status_update(step.outbox, payload)
+                        await self.send_update(step.outbox, payload)
 
                         print(f"Error in {step.step_name}.")
                         print(f"\n\n{payload['error_message']}")
                         
-                    if self.debug:
-                        print("Loading pdb debugger...")
-                        
-                        import pdb; pdb.set_trace()
-                        #step.process(payload)
+                        if self.debug:
+                            print("Loading pdb debugger...")
+                            
+                            import pdb; pdb.set_trace()
+                            step.process(payload)
 
             tasks = [handle_bot_inbox()]
 
@@ -180,8 +186,8 @@ class Bot:
         parser.add_argument("--debug", action="store_true", help="Break into debug mode on failure.")
 
         args = parser.parse_args()
-        config_path = args.bot_file or os.path.join(os.path.dirname(__file__), "config", "bot.yaml")
-        step_path = args.step_path or os.path.join(os.path.dirname(__file__), "steps")
+        config_path = args.bot_file or os.path.join(os.getcwd(), "bot_config", "bot.yaml")
+        step_path = args.step_path or os.path.join(os.getcwd(), "bot_config")
         
         config = {}
 

@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.db.models import (Model, TextField, DateTimeField, ForeignKey,
                               CASCADE)
+from django.contrib.postgres.fields import JSONField
 import markdown
 import bleach
 
@@ -17,6 +18,10 @@ class MessageModel(Model):
     timestamp = DateTimeField('timestamp', auto_now_add=True, editable=False,
                               db_index=True)
     body = TextField('body')
+
+    metadata = JSONField(default={})
+
+
 
     def __str__(self):
         return str(self.id)

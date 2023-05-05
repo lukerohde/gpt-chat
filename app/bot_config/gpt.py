@@ -1,4 +1,4 @@
-from bot_step import Step
+from bot_manager.bot_step import Step
 import backoff
 import openai
 import json 

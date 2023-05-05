@@ -8,6 +8,7 @@ __pycache__
 .mysql_data
 .redis_data
 app/bots/*.json
+app/*.json
 
 # deployment stuff
 .digital_ocean_env

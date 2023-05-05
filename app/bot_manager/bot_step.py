@@ -4,9 +4,11 @@ import sys
 import traceback
 import argparse
 import asyncio
+import datetime
 from typing import Any, Dict, Optional
-from bot_redis import RedisQueueManager
 from box import Box
+
+from bot_manager.bot_redis import RedisQueueManager
 
 class Step:
     def __init__(self, bot_name: str, step_name: str, queue_manager: Optional[Any] = None, config: Dict = {}):
@@ -36,7 +38,15 @@ class Step:
                     print(f"Error enqueued into {self.dlq}")
                     print(f"{error_message}")
                     
-
+    def _chatml_message(self, role = str, name = str, content = str):
+        content = content.replace("{date}", datetime.datetime.now().isoformat())
+        
+        return {
+            "role": role, 
+            "name": name, 
+            "content": content
+        }
+    
     async def stop(self):
         await self.queue_manager.stop()
     
@@ -53,13 +63,15 @@ class Step:
         
         instance = cls(args.bot or "MyBot", args.step or "MyStep")  # Initialize the class
 
+        loop = asyncio.get_event_loop()
+                
         if args.payload:
             with open(args.payload, 'r') as f:
                 payload = json.load(f)
-            instance.process(payload)
+            print(json.dumps(loop.run_until_complete(instance.process(payload)), indent=2))
         else:
             print(f'Listening on {instance.inbox}')
-            instance.listen()
+            loop.run_until_complete(instance.listen())
 
 
 if __name__ == "__main__":

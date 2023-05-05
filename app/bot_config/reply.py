@@ -1,12 +1,13 @@
-from bot_step import Step
+from bot_manager.bot_step import Step
       
 class Reply(Step):
     
     async def process(self, payload):
         
-        payload['reply']['body'] = payload['draft']['body']
+        if 'draft' in payload:
+            payload['reply'] = payload['draft']
         
         return payload
 
 if __name__ == "__main__":
-    Step3.main()
+    Reply.main()

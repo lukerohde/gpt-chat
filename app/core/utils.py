@@ -24,7 +24,8 @@ def bot_notification(messages):
     payload = [{
         'user': m.user.username,
         'recipient': m.recipient.username, 
-        'body': m.body
+        'body': m.body,
+        'timestamp': m.timestamp.isoformat()
     } for m in messages ]
 
     notification = {
@@ -61,6 +62,6 @@ def send_message_notifications(message):
                     Q(recipient=message.recipient, user=message.user) |
                     Q(recipient=message.user, user=message.recipient)
                 ).order_by('-timestamp')[:10][::-1]
-
+        
         result = async_to_sync(send_message_to_bot)(bot, bot_notification(message_history))
     return result

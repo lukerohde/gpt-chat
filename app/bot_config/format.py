@@ -1,4 +1,4 @@
-from bot_step import Step
+from bot_manager.bot_step import Step
      
 class Format(Step):
 
@@ -13,13 +13,20 @@ class Format(Step):
             'body': '¯\_(ツ)_/¯'
         }
 
-        payload['reply'] = payload['draft']
-        
         return payload
+    
+    def dress_content(self, message):
+        content = message['body']
+
+        if message["user"] != self.bot_name:
+            content = self.config.each_user_message.replace('{content}', content)
+            content = content.replace('{timestamp}', message['timestamp'])            
+        
+        return content 
     
     def _chatml(self, messages):
         results = [{ 
-            "content": message["body"],
+            "content": self.dress_content(message),
             "name": message["user"],
             "role": "assistant" if message["user"] == self.bot_name else "user"
          } for message in messages]
@@ -27,4 +34,4 @@ class Format(Step):
         return results
 
 if __name__ == "__main__":
-    Step1.main()
+    Format.main()

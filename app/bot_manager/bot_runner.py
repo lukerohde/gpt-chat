@@ -7,9 +7,9 @@ import argparse
 from typing import Any, Dict, Optional, Type
 from aiohttp import web, ClientSession
 
-from bot_redis import RedisQueueManager
-from bot import Bot
-from bot_server import BotServer
+from bot_manager.bot_redis import RedisQueueManager
+from bot_manager.bot import Bot
+from bot_manager.bot_server import BotServer
 
 # from watchdog.observers import Observer
 # from watchdog.events import FileSystemEventHandler
@@ -62,18 +62,18 @@ class BotManager:
         parser.add_argument("--debug", action="store_true", help="Break into debug mode on failure.")
 
         args = parser.parse_args()
-        bot_path = args.bot_path or os.path.join(os.path.dirname(__file__), "bots")
-        step_path = args.step_path or os.path.join(os.path.dirname(__file__), "steps")
+        bot_path = args.bot_path or os.path.join(os.getcwd(), "bot_config")
+        step_path = args.step_path or os.path.join(os.getcwd(), "bot_config")
 
-        # if not os.path.isdir(bot_path):
-        #     parser.print_usage()
-        #     print(f"The bot config path '{bot_path}' does not exist.")
-        #     return 
+        if not os.path.isdir(bot_path):
+            parser.print_usage()
+            print(f"The bot config path '{bot_path}' does not exist.")
+            return 
         
-        # if not os.path.isdir(step_path):
-        #     parser.print_usage()
-        #     print(f"The step file path '{step_path}' does not exist.")
-        #     return 
+        if not os.path.isdir(step_path):
+            parser.print_usage()
+            print(f"The step file path '{step_path}' does not exist.")
+            return 
 
         loop = asyncio.get_event_loop()
         
