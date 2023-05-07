@@ -13,12 +13,15 @@ export default class extends Controller {
     this.scrollToBottom();
     this.currentRecipient = this.element.dataset.currentRecipient;
     hljs.highlightAll();
+    this.element.querySelector('#chat-input').addEventListener("keydown", this.handleKeyDown);
   }
 
   disconnect() {
     // Close the WebSocket connection when the controller is disconnected
     if (this.socket) {
       this.socket.removeEventListener('message', this.handleMessageReceivedBound);
+      this.element.querySelector('#chat-input').removeEventListener("keydown", this.handleKeyDown);
+
       this.socket.close();
       this.socket = null;
     }
@@ -99,6 +102,13 @@ export default class extends Controller {
       this.element.querySelector('#chat-input').value = '';
     } else {
       console.error('Error submitting the form:', response.statusText);
+    }
+  }
+
+  handleKeyDown(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      event.target.form.dispatchEvent(new Event("submit"));
     }
   }
 

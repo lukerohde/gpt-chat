@@ -1,8 +1,0 @@
-name: japbot
-token: eca28c8b7c8ce3b426ef105ec3aef8af90f6aeda
-steps:
-  - class: Format
-  - class: Gpt
-    config:
-      model: gpt-4
-  - class: Reply

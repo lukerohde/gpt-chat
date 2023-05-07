@@ -13,7 +13,9 @@ class Format(Step):
         content = message['body']
 
         if message["user"] != self.bot_name:
-            content = self.config.each_user_message.replace('{content}', content)
+            if 'each_user_message' in self.config:
+                content = self.config.each_user_message.replace('{content}', content)
+            
             content = content.replace('{timestamp}', message['timestamp'])            
         
         return content 

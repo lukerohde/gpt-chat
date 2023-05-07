@@ -25,7 +25,7 @@ So far I've
 It's quiet a bit more complex than narrowfail's beautifully simple app.
 
 
-![](http://g.recordit.co/JYruQDLd0h.gif)
+![](https://g.recordit.co/NTgGJQUkGL)
 
 ## Architecture ##
  - The default url is a chat between the current user and the first other user
@@ -103,6 +103,17 @@ npm run bots   # to fire up the bot server
 This script mounts your pgdata and redis data on an external docker volume, so if you rebuild or remove your database or redis containers you don't loose all your data and don't have to reinstall all your packages.  
 
 In the docker-compose.override.example I suggest persisting the data to local folders for inspection.  I also persist the user volume for auto complete when inside your container
+
+## Configuring bots
+
+Make a bot and a token from the admin console.  Make a yaml file in app/bot_config with the same name
+- see bot_config/diaryfile.yaml and bot_config/japanese_bot.yaml for examples.  You can make your own
+custom step file with a process method, that takes a payload  and returns the payload.  If you include
+a payload['reply'] that will get posted to the user.
+
+The pipeline approach is designed to make it simple to contribute reusable steps.  
+
+There is still much to do.  The main priority is bot registration using the develop's token, that replies with a token for the bot to communicate with so I don't need to commit that.  
 
 ## Deploying to Digital Ocean
 

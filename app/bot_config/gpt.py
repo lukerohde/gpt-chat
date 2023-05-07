@@ -10,8 +10,16 @@ class Gpt(Step):
     async def process(self, payload):
         payload['openai'] = await self._ask_openai(payload['chatml'])
 
-        payload['draft']['body'] = payload['openai']['choices'][0]['message']['content']
-        
+        if not 'draft' in payload: 
+            payload['draft'] = {}
+
+        if 'choices' in payload['openai']:
+            payload['draft']['body'] = payload['openai']['choices'][0]['message']['content']
+        elif 'error' in payload['openai']:
+            payload['draft']['body'] = f"OpenAI Error: {payload['openai']['error']['message']}"
+        else:
+            payload['draft']['body'] = f"An unknown error occurred"   
+
         return payload
     
     @backoff.on_exception(backoff.expo, openai.error.RateLimitError)
