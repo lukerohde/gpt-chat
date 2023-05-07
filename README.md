@@ -1,54 +1,47 @@
 # ChatApp  #
 
-This was forked from https://github.com/narrowfail/django-channels-chat so I can play with the GPT3 api.
+Forked from https://github.com/narrowfail/django-channels-chat to play with the OpenAI GPT api.
 
-I haven't done any GPT stuff yet, but I've containerised it and added deployment scripts for digital ocean.
+It's a small person-to-person application built using Django where some users 
+can be bots.  It has a REST API and uses WebSockets to notify clients of new 
+messages and avoid polling.  Bots run in another container, and are notified 
+via http.  They reply via the api.
 
-A small functional person-to-person message center application built using Django.
-It has a REST API and uses WebSockets to notify clients of new messages and 
-avoid polling.
+So far I've
+- containerised it using docker-compose
+- added deployment scripts for digital ocean
+- got letencrypt working 
+- got websockets working behind nginx (near killed me)
+- switched to redis & postgresql
+- upgraded to bootstrap 5 and given it a responsive face-lift
+- dark mode! It's very dark
+- used stimulusjs & parcel to organise my javascript
+- switched to rendering server-side rather than API + JS
+- bookmarkable RESTFUL urls
+- created a bot server with configurable pipelines
+- made a kids gratitude journal as a test pipeline
+- broken all the tests and not fixed them!!!
+
+It's quiet a bit more complex than narrowfail's beautifully simple app.
+
 
 ![](http://g.recordit.co/JYruQDLd0h.gif)
 
 ## Architecture ##
- - When a user logs in, the frontend downloads the user list and opens a
-   Websocket connection to the server (notifications channel).
- - When a user selects another user to chat, the frontend downloads the latest
-   15 messages (see settings) they've exchanged.
- - When a user sends a message, the frontend sends a POST to the REST API, then
-   Django saves the message and notifies the users involved using the Websocket
-   connection (sends the new message ID).
- - When the frontend receives a new message notification (with the message ID),
-   it performs a GET query to the API to download the received message.
-
-## Scaling ##
-
-### Requests ###
-"Because Channels takes Django into a multi-process model, you no longer run 
-everything in one process along with a WSGI server (of course, you’re still 
-free to do that if you don’t want to use Channels). Instead, you run one or 
-more interface servers, and one or more worker servers, connected by that 
-channel layer you configured earlier."
-
-In this case, I'm using the In-Memory channel system, but could be changed to
-the Redis backend to improve performance and spawn multiple workers in a
-distributed environment.
-
-Please take a look at the link below for more information:
-https://channels.readthedocs.io/en/latest/introduction.html
-
-
-**update 04/06/19**
-
-- using pipenv for package management
-- move to Channels 2
-- use redis as the channel layer backing store. for more information, please check [channels_redis](https://github.com/django/channels_redis)
-
-### Database ###
-For this demo, I'm using a simple MySQL setup. If more performance is required, 
-a MySQL cluster / shard could be deployed.
-
-PD: I'm using indexes to improve performance.
+ - The default url is a chat between the current user and the first other user
+ - Django renders the whole page client side to avoid JS api calls and rendering
+ - The user posts to the server's chat view using a regular form
+ - The bot posts to the server's message api and identifies itself with its token
+ - When a message is received, the server notifies all clients via websockets
+ - The server renders the message in html and sends it over the websocket for
+   direct insertion into the dom.  No JS call to the API and JS rendering.
+ - When the user is posting to a bot, the server also posts json the bot's 
+   endpoint which is configured with the bot
+ - The bot server runs in its own container listening on http://bot:8001
+ - When the bot recieves a message it runs a pipeline of steps to compose a reply
+ - Bot are customizable in yaml and composed of simple reusable py scripts
+ - When a user selects another user/bot, it makes an ajax call for those messages
+   and the server renders just those messages back in full html
 
 ## Assumptions ##
 Because of time constraints this project lacks of:
@@ -58,11 +51,16 @@ Because of time constraints this project lacks of:
 - Good Test Coverage
 - Better Comments / Documentation Strings
 - Frontend Tests
-- Modern Frontend Framework (like React)
-- Frontend Package (automatic lintin, building and minification)
-- Proper UX / UI design (looks plain bootstrap)
+- failed to upgrade to django 4 - arrgghhh!!
+- DONE Modern Frontend Framework (like React) - used stimulusjs ;)
+- DONE Frontend Package (automatic lintin, building and minification) - used parcel
+- DONE Proper UX / UI design (looks plain bootstrap) - pretty bootstrap
 
 ## Run ##
+
+Copy the .env.example to .env and provide your config
+
+Do exec into containers and run the servers yourself copy docker-compose.override.yaml.example to docker-compose.override.yaml
 
 0. run containers (daemonised)
 ```
@@ -80,16 +78,11 @@ docker-compose exec app /bin/bash
 ```
 2. Init database
 ```bash
-./manage.py migrate
+npm run setup # this runs migrations and super user creation
 ```
 3. Run tests
 ```bash
-./manage.py test
-```
-
-4. Create admin user
-```bash
-./manage.py createsuperuser
+./manage.py test # these are borken ATM
 ```
 
 5. Run development server
@@ -97,38 +90,19 @@ docker-compose exec app /bin/bash
 ./manage.py runserver 0.0.0.0:$APP_PORT
 ```
 
-To override default settings, create a local_settings.py file in the chat folder.
-
-Message prefetch config (load last n messages):
-```python
-MESSAGES_TO_LOAD = 15
+There are a number of npm shortcuts
+```bash
+npm run setup  # to setup the db
+npm run server # to run django
+npm run parcel # for hot reload of JS
+npm run build  # to make minified js
+npm run bots   # to fire up the bot server
 ```
 
 ## Persisting data
 This script mounts your pgdata and redis data on an external docker volume, so if you rebuild or remove your database or redis containers you don't loose all your data and don't have to reinstall all your packages.  
 
 In the docker-compose.override.example I suggest persisting the data to local folders for inspection.  I also persist the user volume for auto complete when inside your container
-
-## developing with docker on osx
-On osx docker volume mounts to the host are suuupperrr slow.
-
-Use the override file to mount your app volume with :delegated
-```
-cp docker-compose.override.yml.example docker-compose.override.yml
-```
-
-```
-  app:
-    volumes:
-      - ./app:/app:delegated
-```
-
-The provided docker-compose.override.yaml.example file will not actually run your app.  Instead it runs docker-start.override that hangs the container to leave it running so you can shell in and run your application yourself.  This makes debugging easy.  
-
-The short cut for running your app then shelling in is
-`dcub app` 
-
-Once shelled in you can run `python3 start.py` etc...
 
 ## Deploying to Digital Ocean
 
@@ -202,3 +176,23 @@ ddeleteall() {
     docker system prune -a
 }
 ```
+
+## developing with docker on osx
+
+Use the override file to mount your app volume with :delegated
+```
+cp docker-compose.override.yml.example docker-compose.override.yml
+```
+
+```
+  app:
+    volumes:
+      - ./app:/app:delegated
+```
+
+The provided docker-compose.override.yaml.example file will not actually run your app.  Instead it runs docker-start.override that hangs the container to leave it running so you can shell in and run your application yourself.  This makes debugging easy.  
+
+The shortcut for running your app then shelling in is
+`dcub app` 
+
+Once shelled in you can run `npm run server` etc...

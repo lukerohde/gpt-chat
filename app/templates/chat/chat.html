@@ -24,6 +24,11 @@
                 </button>
             </div>
             <div class="offcanvas-body">
+                {% if not users %}
+                    <div class="d-flex justify-content-center">
+                        No registered bots
+                    </div>
+                {% endif %}
                 <div id="user-list" class="list-group" data-chat-target="userList">
                     {% include 'chat/_user_list.html' %}
                 </div>
@@ -56,18 +61,25 @@
             <div class="col-12 d-flex flex-column">
                 <div class="card flex-grow-1">
                     <div class="card-body chat-card-body">
+                        {% if not selected_user_id %}
+                            <div class="d-flex justify-content-center align-items-center min-vh-100">
+                                <h1 class="display-4 text-muted">No Selected User</h1>
+                            </div>
+                        {% endif %}
                         <ul id="messages" class="messages" data-chat-target="messageList">
                             {% include 'chat/_message_list.html' %}                                
                         </ul>
+                        
                     </div>
                 </div>
+            
                 <div class="card-footer">
-                    <form id="chat-form" method="post" action="{% url 'chat' user_id=selected_user_id %}" data-action="submit->chat#submitForm" data-chat-target="chatForm">
+                    <form id="chat-form" method="post" action="{% if selected_user_id %} {% url 'chat' user_id=selected_user_id %} {% endif %}" data-action="submit->chat#submitForm" data-chat-target="chatForm">
                         {% csrf_token %}
                         <div class="input-group chat-input-row">
                             {{ form.message }}
                             <span class="input-group-btn">
-                                <button type="submit" class="btn btn-primary btn" id="btn-send">
+                                <button type="submit" class="btn btn-primary btn" id="btn-send" {% if not selected_user_id %}Disabled{% endif %}>
                                     Send
                                 </button>
                             </span>

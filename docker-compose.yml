@@ -26,6 +26,7 @@ services:
       - OPENAI_TEMPERATURE
       - OPENAI_RESPONSE_TOKENS
       - OPENAI_MAX_TOKENS
+      - PYTHONPATH=/home/pyuser/app
     links:
       - pg
       - redis

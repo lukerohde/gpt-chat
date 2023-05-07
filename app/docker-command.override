@@ -4,11 +4,8 @@
 echo -------------------------------------------------------------
 echo Running $0.  This hangs the container and so you can shell in
 echo \# docker-compose up www \&\& docker-compose exec /bin/bash
-echo \# ./manage.py migrate
-echo \# ./manage.py test
-echo \# ./manage.py createsuperuser
-echo \# ./manage.py collectstatic --noinput
-echo \# ./manage.py runserver 0.0.0.0:\$APP_PORT
+echo \# npm run setup
+echo \# npm run everything
 
 # THIS KEEPS THE CONTAINER RUNNING
 # AND GRACEFULLY KILLS IT TOO

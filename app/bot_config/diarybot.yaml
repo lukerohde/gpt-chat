@@ -1,6 +1,6 @@
 
 name: kids-diary-bot
-token: a4ed80c87717fc61f56cfa0758c89a25aae66314
+token: 251de7879f89167fd21334fc2dfb5c032ed0699d
 steps:
   - class: Draft
   - class: Format
