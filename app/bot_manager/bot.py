@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional, Type
 from channels.layers import get_channel_layer
 from box import Box
 from aiohttp import web, ClientSession
-
+import signal
 
 from bot_manager.bot_step import Step
 from bot_manager.bot_redis import RedisQueueManager
@@ -26,6 +26,7 @@ class Bot:
         self.steps = []
         self.step_classes = {}
         self.debug = False
+        self._stop = False
 
         self.load_config()
         self.load_step_classes()
@@ -92,14 +93,17 @@ class Bot:
         return payload
     
     async def process_async(self, payload: Optional[Dict] = {}) -> Dict:
+
         if payload:
-            await self.queue_manager.async_enqueue(self.inbox, payload)
+            await self.enqueue(self, payload)
         
         await self.listen()
-        print('process_async')
-
+        
 
     async def send_message_to_django_app(self, reply):
+
+        #await asyncio.sleep(1) #give the user time to catch up
+
         async with ClientSession() as session:
             url = 'http://app:3000/api/v1/message/'
         
@@ -110,82 +114,109 @@ class Bot:
             async with session.post(url, data=json.dumps(reply), headers=headers) as response:
                 return await response.json()
 
-    async def send_update(self, mailbox, payload):
-        with open(f'{mailbox}.json', 'w') as fp:
+    async def send_update(self, message, payload):
+        
+        print(message)
+
+        with open(f"bot_pipeline.json", 'w') as fp:
             json.dump(payload, fp, indent=2)
         
-        print(f"Saved {mailbox}.json.")
-
         if 'reply' in payload or 'draft' in payload:
             if 'reply' in payload:
                 msg = payload['reply']
                 msg['status'] = 'reply'
                 del payload["reply"]
+                
+                if 'draft' in payload:
+                    del payload["draft"]
             else:
                 msg = payload['draft']
+                msg['metadata'] = msg.get('metadata', {})
+                msg['metadata']['notice'] = f'{message}'
                 msg['status'] = 'draft'
 
-            await self.send_message_to_django_app(msg)
+            asyncio.create_task(self.send_message_to_django_app(msg))
             
+
+    async def enqueue(self, step, payload):
+        await self.queue_manager.async_enqueue(step.inbox, payload)
+
+    async def dequeue(self, inbox):
+        result = await self.queue_manager.async_dequeue(inbox)
+        return result
+
 
     async def listen(self) -> None:
-        while True:
+        self._stop = False
+        while not self._stop:
             
             async def handle_bot_inbox():
-                while True:
-                    payload = await self.queue_manager.async_dequeue(self.inbox)
+                while not self._stop:
+                    payload = await self.dequeue(self.inbox)
                     if payload: 
-                        await self.send_update(self.inbox, payload) 
-                        await self.queue_manager.async_enqueue(self.steps[0].inbox, payload)
+                        await self.send_update(f"{self.steps[0].activity}", payload)
+                        await self.enqueue(self.steps[0], payload)
+                
+                #print(f"{self.inbox} stopped")
+
 
             async def handle_step_outbox(step: Step, next_step: Optional[Step]):
-                while True:
-                    payload = await self.queue_manager.async_dequeue(step.outbox)
+                while not self._stop:
+                    payload = await self.dequeue(step.outbox)
                     if payload:
-                        await self.send_update(step.outbox, payload)
                         
                         if next_step:
-                            await self.queue_manager.async_enqueue(next_step.inbox, payload)
-                        
+                            await self.send_update(f"{next_step.activity}", payload)
+                            await self.enqueue(next_step, payload)
+                        else:
+                            await self.send_update(f"Finished {step.activity}", payload)
+                
+                #print(f"{step.outbox} outbox stopped")
 
                             
 
             async def handle_step_dlq(step: Step):
-                while True:
-                    payload = await self.queue_manager.async_dequeue(step.dlq)
+                while not self._stop:
+                    payload = await self.dequeue(step.dlq)
                     
                     if payload:
-                        await self.send_update(step.outbox, payload)
+                        msg = f"Error in {step.activity}.  `{payload['error_message']}`"
+                        await self.send_update(msg, payload['payload'])
 
-                        print(f"Error in {step.step_name}.")
-                        print(f"\n\n{payload['error_message']}")
-                        
                         if self.debug:
                             print("Loading pdb debugger...")
                             
                             import pdb; pdb.set_trace()
                             step.process(payload)
+                
+                #print(f"{step.dlq} stopped")
 
-            tasks = [handle_bot_inbox()]
+
+            tasks = [asyncio.create_task(handle_bot_inbox())]
 
             for i, step in enumerate(self.steps):
                 next_step = self.steps[i + 1] if i + 1 < len(self.steps) else None
-                tasks.append(step.listen())
-                tasks.append(handle_step_outbox(step, next_step))
-                tasks.append(handle_step_dlq(step)) 
+                tasks.append(asyncio.create_task(step.listen()))
+                tasks.append(asyncio.create_task(handle_step_outbox(step, next_step)))
+                tasks.append(asyncio.create_task(handle_step_dlq(step)))
 
 
             await asyncio.gather(*tasks)
+        
+        print(f"{self.bot_name} listener stopped")
 
-    async def stop(self):
-        await self.queue_manager.stop()
+    def stop(self):
         for step in self.steps:
-            await step.stop()
+            step.stop()
+
+        self._stop = True
+        
+        
 
 
     @classmethod
     def main(cls):
-        
+
         parser = argparse.ArgumentParser(description="Bot manager")
         parser.add_argument('--bot_file', type=str, help='Path to bot definition yaml file', required=False)
         parser.add_argument('--step_path', type=str, help='Path to bot definition yaml file', required=False)
@@ -218,7 +249,12 @@ class Bot:
             with open(args.payload, 'r') as f:
                 payload = json.load(f)
 
+        def bot_stopper():
+            bot.stop()
             
+        loop.add_signal_handler(signal.SIGINT, bot_stopper)
+        signal.signal(signal.SIGTERM, bot_stopper)
+
         if args.sync:    
             bot.process(payload)
         else:
@@ -232,7 +268,7 @@ class Bot:
             except KeyboardInterrupt:
                 print("Shutting down gracefully...")
             finally: 
-                loop.run_until_complete(bot.stop())
+                loop.run_until_complete(bot.queue_manager.stop())
                 loop.close()
     
 

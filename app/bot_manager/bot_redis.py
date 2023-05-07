@@ -28,12 +28,15 @@ class RedisQueueManager:
         async with self.async_redis_lock:
             if self.async_redis is None:
                 self.async_redis = await aioredis.create_redis_pool(self.redis_url)
+                print("REDIS CONNECTION POOL CREATED")
             return self.async_redis
     
     async def stop(self):
         async_redis = await self.get_async_redis()
         async_redis.close()
         await async_redis.wait_closed()
+        print("REDIS CONNECTION POOL CLOSED")
+            
     
     async def async_enqueue(self, queue_name: str, payload: Dict) -> None:
         async_redis = await self.get_async_redis()

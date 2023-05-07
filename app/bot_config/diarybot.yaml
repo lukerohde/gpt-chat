@@ -2,6 +2,7 @@
 name: kids-diary-bot
 token: a4ed80c87717fc61f56cfa0758c89a25aae66314
 steps:
+  - class: Draft
   - class: Format
     config:
       each_user_message: |
@@ -39,7 +40,8 @@ steps:
         'Thanks for your message.  I'm currently offline.  Chat tomorrow!'
         
         After wrapping up, summarize their day in the following machine 
-        readable json format in a metadata section as illustrated below
+        readable json format in a metadata section as illustrated below.  
+        Please carefully ensure the json is correct.
         
         p.s. Only summarize once per day, unless something major comes up after your summary.
 

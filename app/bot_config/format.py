@@ -7,12 +7,6 @@ class Format(Step):
 
         payload['chatml'] = self._chatml(messages)
 
-        payload['draft']={
-            'user': payload['messages'][-1]['recipient'],
-            'recipient': payload['messages'][-1]['user'],
-            'body': '¯\_(ツ)_/¯'
-        }
-
         return payload
     
     def dress_content(self, message):

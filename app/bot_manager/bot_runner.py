@@ -6,6 +6,7 @@ import yaml
 import argparse
 from typing import Any, Dict, Optional, Type
 from aiohttp import web, ClientSession
+import signal
 
 from bot_manager.bot_redis import RedisQueueManager
 from bot_manager.bot import Bot
@@ -37,7 +38,7 @@ class BotManager:
                 bot_config = yaml.safe_load(f)
 
             bot_config['step_path'] = self.step_path
-            bot = Bot(bot_config, bot_server = self.server)
+            bot = Bot(bot_config, queue_manager=self.queue_manager, bot_server = self.server)
             self.bots.append(bot)
         
 
@@ -48,9 +49,9 @@ class BotManager:
         ]
         return tasks
     
-    async def stop(self):
+    def stop(self):
         for bot in self.bots:
-            await bot.stop()
+            bot.stop()
 
     
     @classmethod
@@ -79,13 +80,19 @@ class BotManager:
         
         bm = BotManager(bot_path, step_path)
         bm.debug = args.debug
-        
+
+        def bot_stopper():
+            bm.stop()
+            
+        loop.add_signal_handler(signal.SIGINT, bot_stopper)
+        signal.signal(signal.SIGTERM, bot_stopper)
+
         try:
-            loop.run_until_complete(asyncio.gather(*bm.process_async(), bm.server.start()))
+            loop.run_until_complete(asyncio.gather(bm.server.start(), *bm.process_async()))
         except KeyboardInterrupt:
             print("Shutting down gracefully...")
         finally: 
-            loop.run_until_complete(bm.stop())
+            loop.run_until_complete(bm.queue_manager.stop())
             loop.close()
 
 

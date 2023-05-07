@@ -33,6 +33,10 @@ class Gpt(Step):
                 result =  await response.text()
                     
             return json.loads(result)
+       
+    @property
+    def activity(self):
+        return f"thinking with {self.config.model}..."
 
 
 if __name__ == "__main__":

@@ -31,7 +31,7 @@ class Metadata(Step):
             json_str = json_match.group()
             try:
                 json_obj = json.loads(json_str)
-                payload['draft']['metadata'] = json.dumps(json_obj, indent=2)
+                payload['metadata'] = json.dumps(json_obj, indent=2)
                 payload['draft']['body'] = before_metadata
 
             except json.JSONDecodeError as e:

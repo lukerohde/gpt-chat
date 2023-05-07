@@ -7,10 +7,10 @@ class KidsJournalEntry(Step):
     
     async def process(self, payload):
 
-        if not ('draft' in payload and 'metadata' in payload['draft']):
+        if not ('metadata' in payload):
             return payload 
         
-        metadata = json.loads(payload['draft']['metadata'])
+        metadata = json.loads(payload['metadata'])
         
         journal_entry = f'''
         ```
@@ -37,6 +37,7 @@ class KidsJournalEntry(Step):
         payload['reply']['user'] = payload['messages'][-1]['recipient']
         payload['reply']['recipient'] = payload['messages'][-1]['user']
         payload['reply']['body'] = journal_entry
+        payload['reply']['metadata'] = metadata
         
         return payload
 

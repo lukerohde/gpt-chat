@@ -20,8 +20,6 @@ class MessageModel(Model):
 
     metadata = JSONField(default=dict)
 
-
-
     def __str__(self):
         return str(self.id)
 
@@ -44,6 +42,11 @@ class MessageModel(Model):
         new = self.id
         self.body = self.body.strip()  # Trimming whitespaces from the body
         super(MessageModel, self).save(*args, **kwargs)
+
+
+    def notice(self):
+        if 'notice' in self.metadata: 
+            return self.metadata['notice']
 
     # Meta
     class Meta:

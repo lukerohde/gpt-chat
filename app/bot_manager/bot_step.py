@@ -20,23 +20,33 @@ class Step:
         self.inbox = f"{bot_name}_{step_name}_inbox"
         self.outbox = f"{bot_name}_{step_name}_outbox"
         self.dlq = f"{bot_name}_{step_name}_dlq"
+        self._stop = False
     
     async def process(self, payload):
         raise NotImplementedError("Please implement the `process` method in your step subclass.")
 
     async def listen(self) -> None:
-        while True:
+        self._stop=False
+        while not self._stop:
             payload = await self.queue_manager.async_dequeue(self.inbox)
             if payload:
                 try:
+
+                    payload['status'] = f"Starting {self.activity}"
                     result = await self.process(payload)
+                    result['status'] = f"Finished {self.activity}"
+                    
                     await self.queue_manager.async_enqueue(self.outbox, result)
                 except Exception as e:
                     error_message = str(e)
                     stacktrace = traceback.format_exc()
+
+                    payload['status'] = f"Error in {self.activity}"
                     await self.queue_manager.async_enqueue(self.dlq, {"payload": payload, "error_message": error_message, "stacktrace": stacktrace})
-                    print(f"Error enqueued into {self.dlq}")
-                    print(f"{error_message}")
+                    print(f"Error enqueued into {self.dlq}. {error_message}")
+        
+        print(f"{self.inbox} stopped")
+
                     
     def _chatml_message(self, role = str, name = str, content = str):
         content = content.replace("{date}", datetime.datetime.now().isoformat())
@@ -47,8 +57,12 @@ class Step:
             "content": content
         }
     
-    async def stop(self):
-        await self.queue_manager.stop()
+    def stop(self):
+        self._stop = True
+        
+    @property
+    def activity(self):
+        return self.step_name
     
     
     @classmethod

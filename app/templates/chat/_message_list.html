@@ -1,10 +1,27 @@
 {% for message in messages %}
-    <li class="message mb-3" {% if not message.id %}data-draft="true"{% endif %}>
-        <div class="message-metadata small d-block text-start text-muted">{{ message.user }}</div>
-        <div class="text p-2">
-            {{ message.markdown|safe }}
-            <br>
-        </div>
-        <span class="message-metadata small d-block text-end text-muted">{{ message.timestamp|date:"Y-m-d H:i" }}</span>
-    </li>
+    {% if not message.id %}
+        <li class="message mb-3" data-draft="true" data-user="{{ message.user }}">
+            <div class="message-metadata small d-block text-start text-muted">{{ message.user }}</div>
+            
+            <div class="ms-2 d-flex align-items-center">
+                <div class="thinking-indicator">
+                    <div></div>
+                    <div></div>
+                </div>
+                <p class="text text-muted">{{ message.notice }}</p>
+            </div>
+            
+            <span class="message-metadata small d-block text-end text-muted">{{ message.timestamp|date:"Y-m-d H:i" }}</span>
+        
+        </li>
+    {% else %}
+        <li class="message mb-3" data-user="{{ message.user }}">
+            <div class="message-metadata small d-block text-start text-muted">{{ message.user }}</div>
+            <div class="text p-2">
+                {{ message.markdown|safe }}
+                <br>
+            </div>
+            <span class="message-metadata small d-block text-end text-muted">{{ message.timestamp|date:"Y-m-d H:i" }}</span>
+        </li>
+    {% endif %}
 {% endfor %}
