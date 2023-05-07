@@ -57,8 +57,12 @@ class MessageModelViewSet(ModelViewSet):
         return Response(serializer.data)
     
     def perform_create(self, serializer):
-        #import pdb; pdb.set_trace()
+        
         message = serializer.save()
+
+        if serializer.initial_data.get('status') == 'draft':
+            message.delete() # pretty hacky - but the serializer override alternatives seemed worse
+
         send_message_notifications(message)
 
 

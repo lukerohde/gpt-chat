@@ -29,9 +29,9 @@ class ChatView(View):
 
     def post(self, request, user_id):
         # Handle the POST request
-        # TODO decide if progressively enhancing a form is worth it, vs just posting to the API
         message_text = request.POST.get('message')
         recipient = User.objects.get(pk=user_id)
+
         message = MessageModel.objects.create(user_id=request.user.id, recipient=recipient, body=message_text)
         
         send_message_notifications(message)

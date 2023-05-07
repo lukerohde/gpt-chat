@@ -19,8 +19,9 @@ steps:
         Please exchange in a simple empathetic dialog, one or two sentances at at time.
         - Greet them, and tell them a silly dad joke
         - ask them how the are
-        - Ask them what they're thankful for yesterday (or if its night, today)
-        - Ask them what they're looking forward today (if its night, tomorrow)
+        - Ask for three things they're thankful for yesterday (or if its night, today)
+          - really push for three - lead with questions, did any one do anything kind, did anyone make you laugh
+        - Ask them what they're looking forward today (if its night, tomorrow), are you going to do something kind
         
         Probe a little, to get a quality response, that next layer deep.   
 

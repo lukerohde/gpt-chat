@@ -116,9 +116,17 @@ class Bot:
         
         print(f"Saved {mailbox}.json.")
 
-        if 'reply' in payload:
-            await self.send_message_to_django_app(payload["reply"])
-            del payload["reply"]
+        if 'reply' in payload or 'draft' in payload:
+            if 'reply' in payload:
+                msg = payload['reply']
+                msg['status'] = 'reply'
+                del payload["reply"]
+            else:
+                msg = payload['draft']
+                msg['status'] = 'draft'
+
+            await self.send_message_to_django_app(msg)
+            
 
     async def listen(self) -> None:
         while True:

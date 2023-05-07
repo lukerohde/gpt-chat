@@ -7,7 +7,7 @@ from rest_framework.serializers import ModelSerializer, CharField
 class MessageModelSerializer(ModelSerializer):
     user = CharField(source='user.username', read_only=True)
     recipient = CharField(source='recipient.username')
-
+    
     def create(self, validated_data):
         user = self.context['request'].user
         recipient = get_object_or_404(

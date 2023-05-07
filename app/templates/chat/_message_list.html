@@ -1,5 +1,5 @@
 {% for message in messages %}
-    <li class="message mb-3">
+    <li class="message mb-3" {% if not message.id %}data-draft="true"{% endif %}>
         <div class="message-metadata small d-block text-start text-muted">{{ message.user }}</div>
         <div class="text p-2">
             {{ message.markdown|safe }}

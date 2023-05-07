@@ -35,7 +35,18 @@ export default class extends Controller {
 
   handleMessageReceived(event) {
     let data = JSON.parse(event.data);
-    this.messageListTarget.insertAdjacentHTML("beforeend", data['message']);
+
+    // Try to find the existing draft element
+    let existingDraft = this.messageListTarget.querySelector('[data-draft="true"]');
+
+    // If an existing draft is found, replace it with the new message
+    if (existingDraft) {
+      existingDraft.outerHTML = data['message'];
+    } else {
+      // If no existing draft is found, append the new message
+      this.messageListTarget.insertAdjacentHTML("beforeend", data['message']);
+    }
+
     this.scrollToBottom();
     hljs.highlightAll();
   }
