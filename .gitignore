@@ -22,6 +22,7 @@ memory/
 app/bot/brain/tmp/
 node_modules
 app/.cache
+app/bot_manager/logs
 
 # Python stuff
 

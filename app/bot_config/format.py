@@ -1,5 +1,8 @@
 from bot_manager.bot_step import Step
-     
+import pytz 
+import datetime
+import dateutil.parser
+
 class Format(Step):
 
     async def process(self, payload):
@@ -16,7 +19,11 @@ class Format(Step):
             if 'each_user_message' in self.config:
                 content = self.config.each_user_message.replace('{content}', content)
             
-            content = content.replace('{timestamp}', message['timestamp'])            
+            input_time = dateutil.parser.parse(message['timestamp'])
+            target_tz = pytz.timezone("Australia/Melbourne")
+            melbourne_time = input_time.astimezone(target_tz)
+
+            content = content.replace('{timestamp}', str(melbourne_time))            
         
         return content 
     

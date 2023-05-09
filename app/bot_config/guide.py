@@ -1,5 +1,6 @@
 from bot_manager.bot_step import Step
-import datetime
+from datetime import datetime
+import pytz
      
 class Guide(Step):
 
@@ -20,8 +21,12 @@ class Guide(Step):
         return payload
     
     def _chatml_message(self, role = str, name = str, content = str):
-        content = content.replace("{date}", datetime.datetime.now().isoformat())
-        
+        input_time = datetime.utcnow().replace(tzinfo=pytz.utc)
+        target_tz = pytz.timezone("Australia/Melbourne")
+        melbourne_time = input_time.astimezone(target_tz)
+
+        content = content.replace("{current_time}", melbourne_time.isoformat())
+
         return {
             "role": role, 
             "name": name, 

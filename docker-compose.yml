@@ -43,6 +43,7 @@ services:
     environment:
       - DJANGO_SECRET_KEY
       - APP_PORT
+      - BOT_PORT
       - POSTGRES_DB
       - POSTGRES_HOST
       - POSTGRES_USER

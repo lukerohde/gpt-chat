@@ -94,7 +94,6 @@ class Bot:
             url = urljoin(self.chat_api, 'bot/register/')
             end_point_url = urljoin('http://bot:8001/', self.end_point, '/')
             user_token = os.getenv('CHAT_API_TOKEN')
-            #import pdb; pdb.set_trace()
             
             headers = {
                 'Content-Type': 'application/json',
@@ -107,6 +106,7 @@ class Bot:
             }
             async with session.put(url, data=json.dumps(data), headers=headers) as response:
                 result = await response.json()
+
 
             self.token = result['bot_token']
 
@@ -141,7 +141,7 @@ class Bot:
         
         print(message)
 
-        with open(f"bot_pipeline.json", 'w') as fp:
+        with open(f"bot_manager/logs/{self.config.name}_{message}.json", 'w') as fp:
             json.dump(payload, fp, indent=2)
         
         if 'reply' in payload or 'draft' in payload:
