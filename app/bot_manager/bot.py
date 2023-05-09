@@ -11,6 +11,7 @@ from typing import Any, Dict, Optional, Type
 from channels.layers import get_channel_layer
 from box import Box
 from aiohttp import web, ClientSession
+from urllib.parse import urljoin
 import signal
 
 from bot_manager.bot_step import Step
@@ -22,19 +23,20 @@ class Bot:
         self.config = Box(config)
         self.queue_manager = queue_manager or RedisQueueManager()
         self.server = bot_server or BotServer()
-        self.server.register_route(f"/api/message/{self.config.name}/", self.receive_message)
+        self.end_point = urljoin(f"/api/v1/message/", self.config.name, "/")
+        self.server.register_route(self.end_point, self.receive_message)
+        self.chat_api = os.getenv('CHAT_API', 'http://app:3000/api/v1/')
         self.steps = []
         self.step_classes = {}
         self.debug = False
         self._stop = False
+        self.app_server = None
+        self.token = None
 
         self.load_config()
         self.load_step_classes()
         self.instantiate_steps()
-        self.pause_event = asyncio.Event()
-
-        self.app_server = None
-
+        
     async def receive_message(self, request):
         print(f"{request.scheme} {request.method} {request.path}")
         payload = await request.json()
@@ -87,6 +89,29 @@ class Bot:
             else:
                 print(f'WARNING: No "{step_name}" class found!')
 
+    async def register(self):
+        async with ClientSession() as session:
+            url = urljoin(self.chat_api, 'bot/register/')
+            end_point_url = urljoin('http://bot:8001/', self.end_point, '/')
+            user_token = os.getenv('CHAT_API_TOKEN')
+            #import pdb; pdb.set_trace()
+            
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Token {user_token}',
+            }
+
+            data = {
+                'botname': self.config.name,
+                'end_point': end_point_url
+            }
+            async with session.put(url, data=json.dumps(data), headers=headers) as response:
+                result = await response.json()
+
+            self.token = result['bot_token']
+
+
+    
     def process(self, payload: Dict) -> Dict:
         for step in self.steps:
             payload = step.process(payload)
@@ -101,15 +126,13 @@ class Bot:
         
 
     async def send_message_to_django_app(self, reply):
-
-        #await asyncio.sleep(1) #give the user time to catch up
-
+        
         async with ClientSession() as session:
-            url = 'http://app:3000/api/v1/message/'
+            url = urljoin(self.chat_api, 'message/')
         
             headers = {
                 'Content-Type': 'application/json',
-                'Authorization': f'Token {self.config.token}',
+                'Authorization': f'Token {self.token}',
             }
             async with session.post(url, data=json.dumps(reply), headers=headers) as response:
                 return await response.json()
@@ -147,6 +170,9 @@ class Bot:
 
 
     async def listen(self) -> None:
+        if self.token == None:
+            await self.register();
+
         self._stop = False
         while not self._stop:
             

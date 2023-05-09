@@ -1,26 +1,30 @@
 import os
-from django.db import models
+from django.db.models import (Model, IntegerField, CharField, FloatField, TextField, DateTimeField, JSONField, ForeignKey, 
+                              CASCADE)
 from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
+
+
 from .brain.working_memory import WorkingMemory
 from .brain.long_term_memory import LongTermMemory
 from .brain.chatgpt import ChatGPT
 import datetime
 import secrets
 import markdown
+import bleach
 
-class Bot(models.Model):
+class Bot(Model):
 
-    botname = models.CharField(max_length=100, default=os.getenv("BOT_NAME"))
-    primer = models.TextField()
-    end_point = models.CharField(max_length=255, default=f"http://localhost:8001/api/message/{os.getenv('BOT_NAME')}")
-    openai_api_key = models.CharField(max_length=100, default='sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
-    openai_completion_model = models.CharField(max_length=100, default=os.getenv("OPENAI_COMPLETION_MODEL") or "text-davinci-003")
-    openai_embedding_model = models.CharField(max_length=100, default=os.getenv("OPENAI_EMBEDDING_MODEL") or "text-embedding-ada-002")
-    openai_token_length = models.FloatField(default=os.getenv("OPENAI_TOKENS_LENGTH") or 3.5)
-    openai_temperature = models.FloatField(default=os.getenv("OPENAI_TEMPERATURE") or 0.8)
-    openai_response_tokens = models.IntegerField(default=os.getenv("OPENAI_RESPONSE_TOKENS") or 256)
-    openai_max_tokens = models.IntegerField(default=os.getenv("OPENAI_MAX_TOKENS") or 4000)
-
+    botname = CharField(max_length=100, default=os.getenv("BOT_NAME"))
+    end_point = CharField(max_length=255, default=f"http://bot:8001/api/message/[botname]/")
+    description = CharField(max_length=255, null=True)
+    config = TextField(null=True)
+    
+    owner = ForeignKey(User, null=True, on_delete=CASCADE, verbose_name='owner',
+                      related_name='bots', db_index=True)
+    bot_user = ForeignKey(User, null=True, on_delete=CASCADE, verbose_name='bot_user',
+                      related_name='bot', db_index=True)
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs) # Call parent's constructor
 
@@ -34,7 +38,11 @@ class Bot(models.Model):
     
     def save(self, *args, **kwargs): 
         if self.pk is None:
-            user = User.objects.create_user(username=self.botname, password=secrets.token_hex(16)) # Create user 
+            bot_user_password = secrets.token_hex(16)
+            bot_user = User.objects.create_user(username=self.botname, password=bot_user_password)
+            self.bot_user = bot_user
+            Token.objects.create(user=bot_user) # Create a token for the bot_user
+        
         super().save(*args, **kwargs) # Call parent's save method  
     
     def load_user_history(self,username):

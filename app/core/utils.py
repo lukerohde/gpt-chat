@@ -1,6 +1,7 @@
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.template.loader import render_to_string
+from rest_framework.authtoken.models import Token
 import redis
 import json
 import os
@@ -35,15 +36,14 @@ def bot_notification(messages):
     }
     return notification
 
-async def send_message_to_bot(bot, notification):
+async def send_message_to_bot(end_point, token, notification):
     async with aiohttp.ClientSession() as session:
-        url = bot.end_point
-        
+    
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Token xxx',
+            'Authorization': f'Token {token}',
         }
-        async with session.post(url, data=json.dumps(notification), headers=headers) as response:
+        async with session.post(end_point, data=json.dumps(notification), headers=headers) as response:
             return await response.text()
 
 def send_message_notifications(message):
@@ -63,5 +63,5 @@ def send_message_notifications(message):
                     Q(recipient=message.user, user=message.recipient)
                 ).order_by('-timestamp')[:10][::-1]
         
-        result = async_to_sync(send_message_to_bot)(bot, bot_notification(message_history))
+        result = async_to_sync(send_message_to_bot)(bot.end_point, Token.objects.filter(user=bot.bot_user).first(), bot_notification(message_history))
     return result

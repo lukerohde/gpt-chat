@@ -4,10 +4,13 @@ from .models import Bot
 
 class BotAdmin(ModelAdmin):
     #readonly_fields = (,)
-    search_fields = ('id', 'botname', 'openai_completion_model')
-    list_display = ('id', 'botname', 'openai_completion_model', 'openai_temperature', 'openai_response_tokens')
+    search_fields = ('id', 'botname', 'end_point', 'description')
+    list_display = ('id', 'botname', 'end_point', 'description', 'config')
     list_display_links = ('id',)
-    list_filter = ('openai_completion_model',)
 
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.owner = request.user # bot is owned by its creator - the current user
+        super().save_model(request, obj, form, change)
 
 site.register(Bot, BotAdmin)
