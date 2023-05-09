@@ -19,4 +19,4 @@ RUN --mount=type=cache,target=/home/pyuser/.cache/pip pip install --user -r ./re
 
 COPY ./app /home/pyuser/app
 RUN mkdir -p /home/pyuser/app/memory
-RUN mkdir -p /home/pyuser/app/bot_manager/logs
+RUN mkdir -p /home/pyuser/app/logs

@@ -141,7 +141,7 @@ class Bot:
         
         print(message)
 
-        with open(f"bot_manager/logs/{self.config.name}_{message}.json", 'w') as fp:
+        with open(f"logs/{self.config.name}_{message}.json", 'w') as fp:
             json.dump(payload, fp, indent=2)
         
         if 'reply' in payload or 'draft' in payload:
