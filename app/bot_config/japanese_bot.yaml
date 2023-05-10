@@ -1,5 +1,4 @@
 name: japanese-bot
-token: f9541715d05a56e9b83f1cee03f38f2c914667df
 steps:
   - class: Draft
   - class: Format
