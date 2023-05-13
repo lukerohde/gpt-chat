@@ -7,7 +7,7 @@ can be bots.  It has a REST API and uses WebSockets to notify clients of new
 messages and avoid polling.  Bots run in another container, and are notified 
 via http.  They reply via the api.
 
-https://github.com/lukerohde/gpt-chat/blob/master/docs/demo.mp4
+![Demo](https://github.com/lukerohde/gpt-chat/blob/master/docs/demo.mp4)
 
 # Setup
 
