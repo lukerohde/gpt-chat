@@ -1,12 +1,12 @@
-
+import os
 from aiohttp import web, ClientSession
 from typing import Any, Dict, Optional, Type
 
 class BotServer:
 
-    def __init__(self, host: Optional[str] = '0.0.0.0', port: Optional[int] = '8001'):
+    def __init__(self, host: Optional[str] = '0.0.0.0', port: Optional[int] = None):
         self.host = host 
-        self.port = port
+        self.port = port or os.getenv('BOT_PORT', '3001')
         self.app_server = web.Application()  
         self.web = web   
         self.site = None   

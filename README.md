@@ -7,6 +7,40 @@ can be bots.  It has a REST API and uses WebSockets to notify clients of new
 messages and avoid polling.  Bots run in another container, and are notified 
 via http.  They reply via the api.
 
+![Demo](docs/demo.mp4)
+
+# Setup
+
+To avoid complex local dev config this has been setup using docker and docker-compose. Docker will need to be installed as a prerequiste.
+
+For the bots to work, you'll need an openai api token.
+
+Run `./setup` to;
+* set your .env vars
+* build your containers
+* run you migrations 
+* and setup your django root user.
+
+This will ask if you want to setup your docker-compose.override.yml file.   Use this file to set up for your local environment.  
+
+The docker-compose.override.yml.example is what I use for local mac development.  It maps the local files into the containers so you can 
+do some programming.  It will also hang the containers so you can 
+exec in and run commands.
+
+Run `docker-compose up -d` to run the containers - or just `./go`
+
+Shell in like `docker-compose exec app /bin/bash`
+
+Once in the app container run `npm run server`
+
+To run the bots, shell in like `docker-compose exec bot /bin/bash`
+
+Once in, run `npm run bots`
+
+See `Using docker-compose shortcuts` below
+
+# Changes made in this fork
+
 So far I've
 - containerised it using docker-compose
 - added deployment scripts for digital ocean
@@ -25,9 +59,10 @@ So far I've
 It's quiet a bit more complex than narrowfail's beautifully simple app.
 
 
-![](https://g.recordit.co/NTgGJQUkGL)
-
 ## Architecture ##
+
+![Architecture](docs/architecture.png)
+
  - The default url is a chat between the current user and the first other user
  - Django renders the whole page client side to avoid JS api calls and rendering
  - The user posts to the server's chat view using a regular form
@@ -56,66 +91,37 @@ Because of time constraints this project lacks of:
 - DONE Frontend Package (automatic lintin, building and minification) - used parcel
 - DONE Proper UX / UI design (looks plain bootstrap) - pretty bootstrap
 
-## Run ##
-
-Copy the .env.example to .env and provide your config
-
-Do exec into containers and run the servers yourself copy docker-compose.override.yaml.example to docker-compose.override.yaml
-
-0. run containers (daemonised)
-```
-docker-compose up -d
-```
-
-see logs
-```
-docker-compose logs -f
-```
-
-1. Shell into the python app container
-```
-docker-compose exec app /bin/bash
-```
-2. Init database
-```bash
-npm run setup # this runs migrations and super user creation
-```
-3. Run tests
-```bash
-./manage.py test # these are borken ATM
-```
-
-5. Run development server
-```bash
-./manage.py runserver 0.0.0.0:$APP_PORT
-```
-
-There are a number of npm shortcuts
-```bash
-npm run setup  # to setup the db
-npm run server # to run django
-npm run parcel # for hot reload of JS
-npm run build  # to make minified js
-npm run bots   # to fire up the bot server
-```
 
 ## Persisting data
 This script mounts your pgdata and redis data on an external docker volume, so if you rebuild or remove your database or redis containers you don't loose all your data and don't have to reinstall all your packages.  
 
-In the docker-compose.override.example I suggest persisting the data to local folders for inspection.  I also persist the user volume for auto complete when inside your container
+In the docker-compose.override.example I suggest persisting the data to local folders for inspection during local development.  I also persist the user volume for auto complete when inside your container
 
-## Configuring bots
+## Configuring/developing bots
 
-Make a bot and a token from the admin console.  Make a yaml file in app/bot_config with the same name
-- see bot_config/diaryfile.yaml and bot_config/japanese_bot.yaml for examples.  You can make your own
-custom step file with a process method, that takes a payload  and returns the payload.  If you include
+DJANGO_SUPERUSER_TOKEN=xxx # run ./manage.py createsuperusertoken
+The bot server uses DJANGO_SUPERUSER_TOKEN to register bots that are 
+configured via yaml in app/bot_config.  
+
+
+See bot_config/diaryfile.yaml and bot_config/japanese_bot.yaml for examples of how to make a bot.
+
+Each step in these yaml files is a python class in the same directory.
+
+You can make your own custom step class with a process method, that takes a payload parameter and returns the payload.  If you include
 a payload['reply'] that will get posted to the user.
 
-The pipeline approach is designed to make it simple to contribute reusable steps.  
-
-There is still much to do.  The main priority is bot registration using the develop's token, that replies with a token for the bot to communicate with so I don't need to commit that.  
+The pipeline approach is designed to make it simple to contribute reusable steps.   
 
 ## Deploying to Digital Ocean
+
+To deploy to digital ocean you'll need doctl installed as a prerequisite.
+
+On mac, `brew install doctl`
+
+Then you'll need to config it with your digital ocean token. 
+
+`doctl auth init`
 
 In the deploy directory there are a number of scripts to help you get into production.  You run them from the parent directory.
 

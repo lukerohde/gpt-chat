@@ -27,5 +27,4 @@ services:
       - ./.certbot/certs:/etc/letsencrypt
       - ./.certbot/challenge:/var/www/certbot
       - ./.certbot/logs:/var/logs/letsencrypt
-      
     

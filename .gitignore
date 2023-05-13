@@ -9,6 +9,7 @@ __pycache__
 .redis_data
 app/bots/*.json
 app/*.json
+app/logs
 
 # deployment stuff
 .digital_ocean_env

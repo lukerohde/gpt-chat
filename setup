@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# Function to generate a password
+generate_password() {
+    echo $(perl -le 'print map { ("a".."z", "A".."Z", 0..9)[rand 62] } 1..32')
+}
+
+# Check if .env file already exists
+if [ ! -f .env ]; then
+    # Copy .env.example to .env
+    cp .env.example .env
+    rm -Rf .pg_data/ # any password previously set won't work now
+    
+    # Generate passwords
+    DJANGO_SUPERUSER_PASSWORD=$(generate_password)
+    POSTGRES_PASSWORD=$(generate_password)
+    REDIS_PASSWORD=$(generate_password)
+
+    # Replace dummy values in .env file using Perl
+    perl -i -pe"s/DJANGO_SUPERUSER_DUMMY_PASSWORD.*$/$DJANGO_SUPERUSER_PASSWORD/g" .env
+    perl -i -pe"s/POSTGRES_DUMMY_PASSWORD.*$/$POSTGRES_PASSWORD/g" .env
+    perl -i -pe"s/REDIS_DUMMY_PASSWORD.*$/$REDIS_PASSWORD/g" .env
+
+
+    echo "Please enter your openai key: "
+    read OPENAI_API_DUMMY_KEY
+    perl -i -pe"s/OPENAI_API_DUMMY_KEY.*$/$OPENAI_API_DUMMY_KEY/g" .env
+else
+    echo ".env file already exists, skipping env setup..."
+fi
+
+
+if [ ! -f docker-compose.override.yml ]; then
+    read -p "Do you wish to setup for local dev using docker-compose.override.yml? (y/n): " answer
+
+    case ${answer:0:1} in
+        y|Y )
+            cp docker-compose.override.yml.example docker-compose.override.yml
+            echo "docker-compose.override.yml.example copied to docker-compose.override.yml.example"
+            echo ""
+            echo "This will hang the app and bot containers so you shell into them."
+            echo "which is useful for local dev"
+        ;;
+        * )
+            echo "Without the docker-compose.override.yml the django and bot server will"
+            echo "when you execute `docker-compose up -d`"
+        ;;
+    esac
+
+    echo ""
+    echo "Press any key to continue setup..."
+    read -n1 -s
+
+else
+    echo "docker-compose.override.yml already exists, skipping override setup..."
+fi
+
+docker-compose build
+docker-compose up pg -d
+
+# Wait for PostgreSQL to start up
+echo "Waiting for PostgreSQL to start..."
+while true; do
+    if docker-compose logs pg | grep -q "database system is ready to accept connections"; then
+        break
+    fi
+    echo "PostgreSQL not ready yet, sleeping..."
+    sleep 5
+done
+echo "PostgreSQL is ready!"
+
+docker-compose run app npm run setup
+DJANGO_SUPERUSER_TOKEN=$(docker-compose run app ./manage.py createsuperusertoken)
+perl -i -pe"s/DJANGO_SUPERUSER_DUMMY_TOKEN.*$/$DJANGO_SUPERUSER_TOKEN/g" .env
+
+echo ""
+echo ""
+echo "to run your server, run './go'"

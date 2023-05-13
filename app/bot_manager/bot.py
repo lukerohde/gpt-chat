@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional, Type
 from channels.layers import get_channel_layer
 from box import Box
 from aiohttp import web, ClientSession
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 import signal
 
 from bot_manager.bot_step import Step
@@ -23,7 +23,8 @@ class Bot:
         self.config = Box(config)
         self.queue_manager = queue_manager or RedisQueueManager()
         self.server = bot_server or BotServer()
-        self.end_point = urljoin(f"/api/v1/message/", self.config.name, "/")
+        bot_api = urlparse(os.getenv('BOT_API'))
+        self.end_point = urljoin(bot_api.path, self.config.name)
         self.server.register_route(self.end_point, self.receive_message)
         self.chat_api = os.getenv('CHAT_API', 'http://app:3000/api/v1/')
         self.steps = []
@@ -92,8 +93,9 @@ class Bot:
     async def register(self):
         async with ClientSession() as session:
             url = urljoin(self.chat_api, 'bot/register/')
-            end_point_url = urljoin('http://bot:8001/', self.end_point, '/')
-            user_token = os.getenv('CHAT_API_TOKEN')
+            end_point_url = urljoin(os.getenv('BOT_API'), self.end_point)
+            print(f'Advertising {end_point_url}')
+            user_token = os.getenv('DJANGO_SUPERUSER_TOKEN')
             
             headers = {
                 'Content-Type': 'application/json',

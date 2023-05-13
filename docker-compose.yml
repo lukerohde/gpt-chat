@@ -30,12 +30,12 @@ services:
     links:
       - pg
       - redis
-      - bot
+      - bots
     tty: true
     stdin_open: true
     command: "./manage.py runserver 0.0.0.0:$APP_PORT"
     #command: "gunicorn --bind 0.0.0.0:3000 chat.asgi -w 4 -k uvicorn.workers.UvicornWorker"
-  bot:
+  bots:
     build:
       context: .
       dockerfile: ./app.dockerfile
@@ -55,6 +55,7 @@ services:
       - DJANGO_SUPERUSER_USERNAME
       - DJANGO_SUPERUSER_PASSWORD
       - DJANGO_SUPERUSER_EMAIL
+      - DJANGO_SUPERUSER_TOKEN
       - OPENAI_API_KEY
       - OPENAI_COMPLETION_MODEL
       - OPENAI_EMBEDDING_MODEL
@@ -64,7 +65,7 @@ services:
       - OPENAI_MAX_TOKENS
       - PYTHONPATH=/home/pyuser/app
       - CHAT_API
-      - CHAT_API_TOKEN
+      - BOT_API
     links:
       - pg
       - redis
