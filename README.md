@@ -3,40 +3,35 @@
 Forked from https://github.com/narrowfail/django-channels-chat to play with the OpenAI GPT api.
 
 It's a small person-to-person application built using Django where some users 
-can be bots.  It has a REST API and uses WebSockets to notify clients of new 
-messages and avoid polling.  Bots run in another container, and are notified 
-via http.  They reply via the api.
-
+can be bots.  Bots can be defined in yaml as a pipeline of simple python steps.   
 
 https://github.com/lukerohde/gpt-chat/assets/1400034/6e553439-3c32-4f3b-a4a5-2d2bbd671c10
 
 
-
 # Setup
 
-To avoid complex local dev config this has been setup using docker and docker-compose. Docker will need to be installed as a prerequiste.
+To keep local development simple we use docker and docker-compose. Docker is a prerequiste.
 
-For the bots to work, you'll need an openai api token.
+For the bots to work, you'll also need an openai api token.
 
-Run `./setup` to;
+Get started by running `./setup` which will;
 * set your .env vars
 * build your containers
 * run you migrations 
 * and setup your django root user.
 
-This will ask if you want to setup your docker-compose.override.yml file.   Use this file to set up for your local environment.  
+You also get the option to setup a docker-compose.override.yml file for your local environment.  The docker-compose.override.yml.example is what I use for local mac development.  
 
-The docker-compose.override.yml.example is what I use for local mac development.  It maps the local files into the containers so you can 
-do some programming.  It will also hang the containers so you can 
+It maps the local files into the containers so you can do some programming.  It will hang the containers so you can 
 exec in and run commands.
 
 Run `docker-compose up -d` to run the containers - or just `./go`
 
-Shell in like `docker-compose exec app /bin/bash`
+Exec in like `docker-compose exec app /bin/bash`
 
 Once in the app container run `npm run server`
 
-To run the bots, shell in like `docker-compose exec bot /bin/bash`
+To run the bots, exec in like `docker-compose exec bot /bin/bash`
 
 Once in, run `npm run bots`
 
@@ -66,21 +61,13 @@ It's quiet a bit more complex than narrowfail's beautifully simple app.
 
 ![Architecture](docs/architecture.png)
 
- - The default url is a chat between the current user and the first other user
- - Django renders the whole page client side to avoid JS api calls and rendering
- - The user posts to the server's chat view using a regular form
- - The bot posts to the server's message api and identifies itself with its token
- - When a message is received, the server notifies all clients via websockets
- - The server renders the message in html and sends it over the websocket for
-   direct insertion into the dom.  No JS call to the API and JS rendering.
- - When the user is posting to a bot, the server also posts json the bot's 
-   endpoint which is configured with the bot
- - The bot server runs in its own container listening on http://bot:8001
- - When the bot recieves a message it runs a pipeline of steps to compose a reply
- - Bot are customizable in yaml and composed of simple reusable py scripts
- - When a user selects another user/bot, it makes an ajax call for those messages
-   and the server renders just those messages back in full html
-
+ - Bots are defined in app/bot_config and are loaded by the bot_manager
+ - Bots consist of a series of steps that are mediated by redis
+ - The bot_manager registers the bots to the django chat app
+ - When the user posts a message, the chat app posts to the bot managers' api
+ - When the bot replies, it posts to the chat apps' api
+ - The chat app relays replies to the clients browser over websockets
+ 
 ## Assumptions ##
 Because of time constraints this project lacks of:
 
