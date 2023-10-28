@@ -1,13 +1,14 @@
 import asyncio
 import glob
 import os
-import sys
+import time
 import yaml
 import argparse
 from typing import Any, Dict, Optional, Type
 from aiohttp import web, ClientSession
 import signal
 
+from bot_manager.bot_watcher import BotWatcher
 from bot_manager.bot_redis import RedisQueueManager
 from bot_manager.bot import Bot
 from bot_manager.bot_server import BotServer
@@ -23,7 +24,7 @@ class BotManager:
         
         self.queue_manager = RedisQueueManager()
         self.server = BotServer()
-        self.bots = []
+        self.bots = {}
         
         self.load_config()
         
@@ -32,27 +33,52 @@ class BotManager:
     def load_config(self):
         files = glob.glob(os.path.join(self.bot_path, "*.yaml"))
         for file in files:
-            print(f"\nLoading Bot Config in {file}...")
-            bot_config = {}
-            with open(file, 'r') as f:
-                bot_config = yaml.safe_load(f)
+            self.load_bot(file)
 
-            bot_config['step_path'] = self.step_path
-            bot = Bot(bot_config, queue_manager=self.queue_manager, bot_server = self.server)
-            self.bots.append(bot)
+    def reload_bot(self, file):
+        # TODO Figure out how to reload.  I think I have reload the whole bot
+        self.server.stop()
+
+        if self.bots.get(file, None):
+            # stop the bot if it is being reloaded
+            self.bots[file].stop()
+
+        self.load_bot(file)
+        self.server.restart()
+    
+    def load_bot(self, file):
+
+        print(f"\nLoading Bot Config in {file}...")
+        bot_config = {}
+        with open(file, 'r') as f:
+            bot_config = yaml.safe_load(f)
+
+        bot_config['step_path'] = self.step_path
+        bot = Bot(bot_config, queue_manager=self.queue_manager, bot_server = self.server)
         
+        self.bots[file] = bot
+
 
     def process_async(self):
-        tasks = [
+        t = [
             bot.process_async()
-            for bot in self.bots
+            for _, bot in self.bots.items()
         ]
-        return tasks
+        self.tasks = asyncio.gather(*t)
+        return self.tasks
     
-    def stop(self):
-        for bot in self.bots:
+    def stop_bots(self):
+        t = [
             bot.stop()
-
+            for _, bot in self.bots.items()
+        ]
+        return asyncio.gather(*t)
+    
+    async def stop(self):
+        await self.stop_bots()
+        await self.tasks
+        await self.queue_manager.stop()
+        await self.server.stop()
     
     @classmethod
     def main(cls):
@@ -77,24 +103,55 @@ class BotManager:
             return 
 
         loop = asyncio.get_event_loop()
+        bm = None
+        tasks = None
+        server = None
         
-        bm = BotManager(bot_path, step_path)
-        bm.debug = args.debug
+        async def start_bot():
+            nonlocal bm
+            nonlocal tasks
+            nonlocal server
+            nonlocal loop
+            nonlocal watcher
 
-        def bot_stopper():
-            bm.stop()
+            bm = BotManager(bot_path, step_path)
+            bm.debug = args.debug
+            server = loop.create_task(bm.server.start())
+            tasks = bm.process_async()
+            watcher.resume()
+
+        def stop_bot():
+            loop.run_until_complete(bm.stop())
+        
+
+        def bot_reloader(file):
+            nonlocal loop
+            print(f"shutting down {len(asyncio.all_tasks(loop=loop))} tasks...")
+            future = asyncio.run_coroutine_threadsafe(bm.stop(), loop)
+            try:
+                future.result(timeout=10)  
+            except concurrent.futures.TimeoutError:
+                print("Timeout waiting for bm.stop() to finish.")
             
-        loop.add_signal_handler(signal.SIGINT, bot_stopper)
-        signal.signal(signal.SIGTERM, bot_stopper)
+            print(f"{len(asyncio.all_tasks(loop=loop))} tasks still running.")
+            
+            print(f"\n\nRELOADING AND RESTARTING...")
+            asyncio.run_coroutine_threadsafe(start_bot(), loop)
+            
+        print(f'-- WATCHING {bot_path} --')
+        watcher = BotWatcher()
+        watcher.start_watching_path(bot_path, bot_reloader)
+        #watcher.start_watching_path(step_path, bot_reloader)
+        watcher.start()
+        
+        loop.create_task(start_bot())
 
         try:
-            loop.run_until_complete(asyncio.gather(bm.server.start(), *bm.process_async()))
-        except KeyboardInterrupt:
-            print("Shutting down gracefully...")
-        finally: 
-            loop.run_until_complete(bm.queue_manager.stop())
-            loop.close()
-
+            loop.run_forever()
+        except KeyboardInterrupt:  # pragma: no branch
+            pass
+        finally:
+            stop_bot()
 
 if __name__ == "__main__":
     BotManager.main()

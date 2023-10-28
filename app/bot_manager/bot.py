@@ -2,6 +2,7 @@ import asyncio
 import glob
 import importlib
 import os
+import traceback
 import sys
 import yaml
 import json
@@ -27,8 +28,13 @@ class Bot:
         self.end_point = urljoin(bot_api.path, self.config.name)
         self.server.register_route(self.end_point, self.receive_message)
         self.chat_api = os.getenv('CHAT_API', 'http://app:3000/api/v1/')
-        self.steps = []
-        self.step_classes = {}
+        
+        # this is pretty awful
+        self.steps = {} # a dict of ClassName, StepInstance
+        self.step_classes = {} # a dict of ClassName, StepClass
+        self.step_config = {} # a dict of ClassName, {Config}
+        self.step_files = {} # a dict of FileName, [ClassNames]
+        
         self.debug = False
         self._stop = False
         self.app_server = None
@@ -50,45 +56,55 @@ class Bot:
         self.outbox = f"{self.config.name}_outbox"
         
 
-    def load_step_classes(self) -> Dict[str, Type[Step]]:
+    def load_step_classes(self) -> None:
         step_classes = {}
         step_files = glob.glob(os.path.join(self.config.step_path, "*.py"))
 
         for step_file in step_files:
-            module_name = os.path.splitext(os.path.basename(step_file))[0]
-            print(f'inspecting {module_name}')
+            self.load_step_file(step_file)
+            
+    def load_step_file(self, step_file) -> None: 
+        module_name = os.path.splitext(os.path.basename(step_file))[0]
+        print(f'inspecting {module_name}.py')
 
-            if module_name == "__init__":
-                continue
+        if module_name == "__init__":
+            return
 
-            # Load the module
-            spec = importlib.util.spec_from_file_location(module_name, step_file)
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[module_name] = module
-            spec.loader.exec_module(module)
+        # Load the module
+        spec = importlib.util.spec_from_file_location(module_name, step_file)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
 
-            # Find the Step subclass in the module
-            for key, value in module.__dict__.items():
-                if isinstance(value, type) and issubclass(value, Step) and value != Step:
-                    step_class = value
-                    print(f'Found {step_class}')
-                    self.step_classes[step_class.__name__] = step_class
-                    break
+        # Find the Step subclass in the module
+        for key, value in module.__dict__.items():
+            if isinstance(value, type) and issubclass(value, Step) and value != Step:
+                step_class = value
+                print(f'Found {step_class}')
+                self.step_classes[step_class.__name__] = step_class
 
-        return step_classes
-    
+                if self.step_files.get(step_file, None):
+                    self.step_files[step_file].append(step_class.__name__) # in case, multiple step classes are found in the one file
+                else:
+                    self.step_files[step_file] = [step_class.__name__]
+
+
     def instantiate_steps(self) -> None:
-        self.steps = []
+        self.steps = {}
         for st in self.config.steps:
             step_name = st.get('class')
-            step_class = self.step_classes.get(step_name)
-            if step_class:
-                print(f"Loading {step_class}")
-                step_config = getattr(st, 'config', Box({}))
-                step_instance = step_class(self.bot_name, step_name, self.queue_manager, step_config.to_dict())
-                self.steps.append(step_instance)
-            else:
-                print(f'WARNING: No "{step_name}" class found!')
+            step_config = st.get('config', Box({}))
+            self.step_config[step_name] = step_config
+            self.instantiate_step(step_name, step_config.to_dict())
+            
+    def instantiate_step(self, step_name, step_config) -> None:
+        step_class = self.step_classes.get(step_name)
+        if step_class:
+            print(f"Loading {step_class}")
+            step_instance = step_class(self.bot_name, step_name, step_config)
+            self.steps[step_name] = step_instance
+        else:
+            print(f'WARNING: No "{step_name}" class found!')
 
     async def register(self):
         async with ClientSession() as session:
@@ -115,12 +131,12 @@ class Bot:
 
     
     def process(self, payload: Dict) -> Dict:
-        for step in self.steps:
+        for name, step in self.steps.items():
             payload = step.process(payload)
         return payload
     
     async def process_async(self, payload: Optional[Dict] = {}) -> Dict:
-
+        
         if payload:
             await self.enqueue(self, payload)
         
@@ -141,8 +157,6 @@ class Bot:
 
     async def send_update(self, message, payload):
         
-        print(message)
-
         with open(f"logs/{self.config.name}_{message}.json", 'w') as fp:
             json.dump(payload, fp, indent=2)
         
@@ -159,7 +173,8 @@ class Bot:
                 msg['metadata'] = msg.get('metadata', {})
                 msg['metadata']['notice'] = f'{message}'
                 msg['status'] = 'draft'
-
+                
+            #print(f"Sending {msg}")
             asyncio.create_task(self.send_message_to_django_app(msg))
             
 
@@ -174,7 +189,7 @@ class Bot:
     async def listen(self) -> None:
         if self.token == None:
             await self.register();
-
+        
         self._stop = False
         while not self._stop:
             
@@ -182,10 +197,33 @@ class Bot:
                 while not self._stop:
                     payload = await self.dequeue(self.inbox)
                     if payload: 
-                        await self.send_update(f"{self.steps[0].activity}", payload)
-                        await self.enqueue(self.steps[0], payload)
+                        step_name, step_instance = next(iter(self.steps.items()))
+                        await self.send_update(f"{step_instance.activity}", payload)
+                        await self.enqueue(step_instance, payload)
+
                 
-                #print(f"{self.inbox} stopped")
+            async def handle_step_inbox(step_name: str) -> None:
+                self._stop=False
+                while not self._stop:
+                    step = self.steps[step_name]
+                        
+                    payload = await self.queue_manager.async_dequeue(step.inbox)
+                    if payload:
+                        try:
+                            payload['status'] = f"Starting {step.activity}"
+                            result = await step.process(payload)
+                            result['status'] = f"Finished {step.activity}"
+                            
+                            await self.queue_manager.async_enqueue(step.outbox, result)
+                        except Exception as e:
+                            error_message = str(e)
+                            stacktrace = traceback.format_exc()
+
+                            payload['status'] = f"Error in {step.activity}"
+                            await self.queue_manager.async_enqueue(step.dlq, {"payload": payload, "error_message": error_message, "stacktrace": stacktrace})
+                            print(f"Error enqueued into {step.dlq}. {error_message}")
+                
+                #print(f"{step.inbox} stopped")
 
 
             async def handle_step_outbox(step: Step, next_step: Optional[Step]):
@@ -219,25 +257,24 @@ class Bot:
                 
                 #print(f"{step.dlq} stopped")
 
-
             tasks = [asyncio.create_task(handle_bot_inbox())]
 
-            for i, step in enumerate(self.steps):
-                next_step = self.steps[i + 1] if i + 1 < len(self.steps) else None
-                tasks.append(asyncio.create_task(step.listen()))
+            items = list(self.steps.items())
+            for i, (step_name, step) in enumerate(items):
+                next_step_name, next_step = items[i + 1] if i + 1 < len(items) else (None, None)
+                tasks.append(asyncio.create_task(handle_step_inbox(step.step_name))) 
                 tasks.append(asyncio.create_task(handle_step_outbox(step, next_step)))
                 tasks.append(asyncio.create_task(handle_step_dlq(step)))
-
 
             await asyncio.gather(*tasks)
         
         print(f"{self.bot_name} listener stopped")
 
-    def stop(self):
-        for step in self.steps:
-            step.stop()
-
+    async def stop(self):
         self._stop = True
+        await asyncio.sleep(1)
+        
+        
         
         
 

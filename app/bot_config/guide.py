@@ -16,7 +16,6 @@ class Guide(Step):
         if 'after' in self.config:
             after_message = self._chatml_message("system", f'{self.bot_name}_supervisor', self.config['after'])
             payload['chatml'].append(after_message)
-
         
         return payload
     

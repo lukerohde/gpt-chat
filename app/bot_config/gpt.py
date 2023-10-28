@@ -7,9 +7,9 @@ from aiohttp import ClientSession
 
 class Gpt(Step):
 
+
     async def process(self, payload):
         payload['openai'] = await self._ask_openai(payload['chatml'])
-
         if not 'draft' in payload: 
             payload['draft'] = {}
 
@@ -19,7 +19,7 @@ class Gpt(Step):
             payload['draft']['body'] = f"OpenAI Error: {payload['openai']['error']['message']}"
         else:
             payload['draft']['body'] = f"An unknown error occurred"   
-
+        
         return payload
     
     @backoff.on_exception(backoff.expo, openai.error.RateLimitError)
@@ -48,4 +48,4 @@ class Gpt(Step):
 
 
 if __name__ == "__main__":
-    Step2.main()
+    Gpt.main()
