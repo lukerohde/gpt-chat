@@ -2,9 +2,11 @@
 FROM python:3.11-buster
 RUN apt-get update -qq
 RUN apt-get install -qq python3-pip python3-dev libpq-dev postgresql-client
+RUN apt-get install -y ca-certificates curl gnupg
 
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash
-RUN apt-get install -y nodejs
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/nodesource.gpg
+RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/nodesource.gpg] https://deb.nodesource.com/node_18.x nodistro main" > /etc/apt/sources.list.d/nodesource.list
+RUN apt-get update && apt-get install -y nodejs
 RUN npm install npm@latest -g
 
 RUN adduser pyuser

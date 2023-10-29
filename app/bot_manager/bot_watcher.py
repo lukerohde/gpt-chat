@@ -21,7 +21,7 @@ class BotWatcher(FileSystemEventHandler):
         
     def on_modified(self, event):
         if not self.enabled:
-            return 
+            return
         
         print(f"{event.src_path} modified")
         self.enabled = False 
