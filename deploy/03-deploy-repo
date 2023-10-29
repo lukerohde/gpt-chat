@@ -56,6 +56,13 @@ ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/
 echo "Creating super user"
 ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py createsuperuser --noinput\" "
 
+# Create api token
+output=$(ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app /bin/bash -c './manage.py drf_create_token \$DJANGO_SUPERUSER_USERNAME'")
+token=$(echo "$output" | awk '{print $3}')
+
+# Update the .env file on the server with the new token
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "sed -i 's/^DJANGO_SUPERUSER_TOKEN=.*$/DJANGO_SUPERUSER_TOKEN=$token/' /home/$DIGITAL_OCEAN_APP_USER/src/.env"
+
 echo "Package JS"
 docker-compose run app "/bin/bash" -c "npm run build"
 
