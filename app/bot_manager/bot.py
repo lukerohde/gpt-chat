@@ -14,6 +14,7 @@ from box import Box
 from aiohttp import web, ClientSession
 from urllib.parse import urljoin, urlparse
 import signal
+import socket
 
 from bot_manager.bot_step import Step
 from bot_manager.bot_redis import RedisQueueManager
@@ -106,11 +107,27 @@ class Bot:
         else:
             print(f'WARNING: No "{step_name}" class found!')
 
+    async def wait_for_port(self, host, port):
+        while True:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                result = sock.connect_ex((host, port))
+                if result == 0:
+                    print(f"Port {host}:{port} is accepting connections")
+                    return
+                else:
+                    print(f"Waiting for {host}:{port} to accept connections...")
+                    await asyncio.sleep(5)
+
+
     async def register(self):
+        
+        app_url = urljoin(self.chat_api, 'bot/register/')
+        bot_url = urljoin(os.getenv('BOT_API'), self.end_point)
+        parsed_app_url = urlparse(app_url)
+        print(f'Registering {self.config.name} to {app_url} with end_point {bot_url}')
+        await self.wait_for_port(parsed_app_url.hostname, parsed_app_url.port)
+        
         async with ClientSession() as session:
-            url = urljoin(self.chat_api, 'bot/register/')
-            end_point_url = urljoin(os.getenv('BOT_API'), self.end_point)
-            print(f'Advertising {end_point_url}')
             user_token = os.getenv('DJANGO_SUPERUSER_TOKEN')
             
             headers = {
@@ -120,13 +137,23 @@ class Bot:
 
             data = {
                 'botname': self.config.name,
-                'end_point': end_point_url
+                'end_point': bot_url
             }
-            async with session.put(url, data=json.dumps(data), headers=headers) as response:
-                result = await response.json()
-
-
-            self.token = result['bot_token']
+            
+            result = None
+            
+            try:
+                async with session.put(app_url, data=json.dumps(data), headers=headers) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        self.token = result['bot_token']
+                        masked_token = self.token[:3] + 'x' * (len(self.token) - 6) + self.token[-3:]
+                        print(f"{parsed_app_url.hostname}:{parsed_app_url.port} granted {self.config.name} token {masked_token}. ")
+                        
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                
+            
 
 
     
