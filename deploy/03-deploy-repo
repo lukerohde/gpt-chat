@@ -46,28 +46,30 @@ done
 # copy them up to the server
 scp .tmp/* $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/.tmp/
 
-# fire up the server
-ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "bash -s" < deploy/03b-docker-compose-up $DIGITAL_OCEAN_APP_USER
-
 # This is annoying that I can't have it in the previous script - it terminates early for reasons I can't figure
 echo "Migrating database"
-ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py migrate\" "
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose run --rm app \"/bin/bash\" -c \"./manage.py migrate\" "
 
 echo "Creating super user"
-ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app \"/bin/bash\" -c \"./manage.py createsuperuser --noinput\" "
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose  run --rm app \"/bin/bash\" -c \"./manage.py createsuperuser --noinput\" "
 
-# Create api token
-output=$(ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose exec app /bin/bash -c './manage.py drf_create_token \$DJANGO_SUPERUSER_USERNAME'")
+echo "Create Super User API Token"
+output=$(ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose  run --rm app /bin/bash -c './manage.py drf_create_token \$DJANGO_SUPERUSER_USERNAME'")
 token=$(echo "$output" | awk '{print $3}')
 
 # Update the .env file on the server with the new token
+echo "Set Super User API Token in ENV"
 ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "sed -i 's/^DJANGO_SUPERUSER_TOKEN=.*$/DJANGO_SUPERUSER_TOKEN=$token/' /home/$DIGITAL_OCEAN_APP_USER/src/.env"
 
+# fire up the server
+echo "Starting containers"
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "bash -s" < deploy/03b-docker-compose-up $DIGITAL_OCEAN_APP_USER
+
 echo "Package JS"
-docker-compose run app "/bin/bash" -c "npm run build"
+docker-compose run --rm app "/bin/bash" -c "npm run build"
 
 echo "Collecting files"
-docker-compose run app "/bin/bash" -c "/home/pyuser/app/manage.py collectstatic --no-input"
+docker-compose run --rm app "/bin/bash" -c "/home/pyuser/app/manage.py collectstatic --no-input"
 
 echo "Copying static files"
 rsync -auv app/.collectstatic/static_root/ $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/app/.collectstatic/static_root/

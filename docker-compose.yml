@@ -31,7 +31,6 @@ services:
     links:
       - pg
       - redis
-      - bots
     tty: true
     stdin_open: true
     command: "./manage.py runserver 0.0.0.0:$APP_PORT"
@@ -70,6 +69,7 @@ services:
     links:
       - pg
       - redis
+      - app
     volumes:
       - bot_data:/home/pyuser/app/memory
     tty: true

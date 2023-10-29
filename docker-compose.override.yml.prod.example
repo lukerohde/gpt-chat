@@ -20,6 +20,8 @@ services:
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
   certbot:
     image: certbot/certbot
+    environment:
+      - DOMAIN
     command: certonly -v --webroot --webroot-path /var/www/certbot --email $DJANGO_SUPERUSER_EMAIL --agree-tos --no-eff-email --domains $DOMAIN
     links:
       - nginx
