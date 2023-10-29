@@ -1,6 +1,15 @@
 #!/bin/bash
+
+# Check for the presence of .env-prod
+if [[ ! -f ./.env-prod ]]; then
+    echo ".env-prod file is missing! Copy .env.example and update with your prod settings."
+    exit 1
+fi
+
 . ./.env-prod
 . ./.digital_ocean_env
+
+
 
 echo "Shut it down" 
 ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose down"
@@ -10,6 +19,16 @@ ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "bash -s" < deploy/03a-clone-repo $DIGIT
 
 # copy up production config
 scp ./.env-prod $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/.env
+
+if [[ ! -f ./docker-compose.override.yml.prod ]]; then
+    read -p "docker-compose.override.yml.prod is missing. Would you like to copy docker-compose.override.yml.prod.example instead? (y/n): " answer
+    if [[ $answer == "y" ]]; then
+        cp ./docker-compose.override.yml.prod.example ./docker-compose.override.yml.prod
+    else
+        exit 1
+    fi
+fi
+
 scp ./docker-compose.override.yml.prod $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/docker-compose.override.yml
 
 rm .tmp/http*.conf

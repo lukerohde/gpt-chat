@@ -9,7 +9,7 @@ RUN echo "deb [signed-by=/etc/apt/trusted.gpg.d/nodesource.gpg] https://deb.node
 RUN apt-get update && apt-get install -y nodejs
 RUN npm install npm@latest -g
 
-RUN adduser pyuser
+RUN adduser --disabled-password --gecos "" pyuser
 USER pyuser
 ENV PATH=/home/pyuser/.local/bin:"$PATH"
 
