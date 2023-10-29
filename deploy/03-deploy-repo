@@ -48,10 +48,10 @@ scp .tmp/* $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src
 
 # This is annoying that I can't have it in the previous script - it terminates early for reasons I can't figure
 echo "Migrating database"
-ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose run --rm app \"/bin/bash\" -c \"./manage.py migrate\" "
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose run app \"/bin/bash\" -c \"./manage.py migrate\" "
 
 echo "Creating super user"
-ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose  run --rm app \"/bin/bash\" -c \"./manage.py createsuperuser --noinput\" "
+ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose  run app \"/bin/bash\" -c \"./manage.py createsuperuser --noinput\" "
 
 echo "Create Super User API Token"
 output=$(ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "cd src; docker-compose  run --rm app /bin/bash -c './manage.py drf_create_token \$DJANGO_SUPERUSER_USERNAME'")
@@ -66,7 +66,7 @@ echo "Starting containers"
 ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "bash -s" < deploy/03b-docker-compose-up $DIGITAL_OCEAN_APP_USER
 
 echo "Package JS"
-docker-compose run --rm app "/bin/bash" -c "npm run build"
+docker-compose run app "/bin/bash" -c "npm run build"
 
 echo "Collecting files"
 docker-compose run --rm app "/bin/bash" -c "/home/pyuser/app/manage.py collectstatic --no-input"
