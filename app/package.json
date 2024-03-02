@@ -6,9 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "migrate": "python manage.py makemigrations && python manage.py migrate",
-    "setup": "python manage.py makemigrations && python manage.py migrate && python manage.py createsuperuser --noinput",
-    "server": "python manage.py runserver 0.0.0.0:3000",
-    "parcel": "parcel static/js/index.js --out-dir static/dist --public-url /static/dist --hmr-port 1235",
+    "setup": "python manage.py makemigrations && python manage.py migrate && python manage.py createsuperuser --noinput && npm install",
+    "server": "npm run bundlejs && python manage.py runserver 0.0.0.0:3000",
+    "hotreloadjs": "parcel static/js/index.js --out-dir static/dist --public-url /static/dist --hmr-port 1235",
+    "bundlejs": "parcel build static/js/index.js --out-dir static/dist --public-url /static/dist",
     "bots": "python bot_manager/bot_runner.py",
     "everything": "concurrently \"python manage.py runserver 0.0.0.0:3000\" \"python bot_manager/bot_runner.py\" \"parcel static/js/index.js --out-dir static/dist --public-url /static/dist --hmr-port 1235\"",
     "build": "NODE_ENV=production parcel build static/js/index.js --out-dir static/dist --public-url /static/dist --detailed-report",

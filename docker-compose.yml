@@ -28,6 +28,8 @@ services:
       - OPENAI_RESPONSE_TOKENS
       - OPENAI_MAX_TOKENS
       - PYTHONPATH=/home/pyuser/app
+      - CHAT_API
+      - BOT_API
     links:
       - pg
       - redis
