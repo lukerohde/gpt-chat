@@ -1,0 +1,23 @@
+name: titan-lite
+steps:
+  - class: Draft
+  - class: Prompt
+    config:
+      maxPromptLength: 25000
+      before: |
+        You are an helpful assistant. Answer questions in a concise way. If you are unsure about the answer say 'I am unsure'
+
+      after: | 
+        Please respond in markdown format with two spaces at the end of every sentence.
+        The current time is {current_time}.  
+        
+        Answer:
+  - class: Titan
+    config:
+      maxAnswerTokens: 512
+      temperature: 0
+      topp: 0.9
+  - class: Ask_bedrock
+    config:
+      model: amazon.titan-text-lite-v1
+  - class: Reply

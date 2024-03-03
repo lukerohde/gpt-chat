@@ -3,7 +3,7 @@ import pytz
 import datetime
 import dateutil.parser
 
-class Format(Step):
+class Chatml(Step):
 
     async def process(self, payload):
         messages=payload['messages']
@@ -37,4 +37,4 @@ class Format(Step):
         return results
 
 if __name__ == "__main__":
-    Format.main()
+    Chatml.main()

@@ -16,6 +16,11 @@ services:
     volumes:
         - ./app:/home/pyuser/app:delegated
         - app_user:/home/pyuser # for bash history etc
+        - $HOME/.aws:/home/pyuser/.aws:ro
+    environment:
+      - AWS_PROFILE
+      - AWS_DEFAULT_REGION
+      - AWS_CA_BUNDLE=/usr/local/share/ca-certificates/ZscalerRootCertificate-2048-SHA256.crt
   pg:
     restart: unless-stopped
     ports:
