@@ -20,7 +20,7 @@ def web_client_notification(message, recipient):
     }
     return notification
 
-def bot_notification(messages):
+def bot_notification(messages, user_profile_bot_data):
     
     payload = [{
         'user': m.user.username,
@@ -32,7 +32,8 @@ def bot_notification(messages):
     notification = {
         'type': 'direct_message',
         'reply_to': f"TBD",
-        'messages': payload
+        'messages': payload,
+        'user_profile_bot_data': user_profile_bot_data
     }
     return notification
 
@@ -63,5 +64,7 @@ def send_message_notifications(message):
                     Q(recipient=message.user, user=message.recipient)
                 ).order_by('-timestamp')[:40][::-1] # enable 20 questions - need to protect from token overload
         
-        result = async_to_sync(send_message_to_bot)(bot.end_point, Token.objects.filter(user=bot.bot_user).first(), bot_notification(message_history))
+        user_profile_bot_data = message.user.userprofile.bot_data.get(message.recipient.username, {})
+        
+        result = async_to_sync(send_message_to_bot)(bot.end_point, Token.objects.filter(user=bot.bot_user).first(), bot_notification(message_history, user_profile_bot_data))
     return result

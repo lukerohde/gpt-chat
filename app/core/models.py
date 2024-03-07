@@ -1,6 +1,11 @@
 from django.contrib.auth.models import User
 from django.db.models import (Model, TextField, DateTimeField, JSONField, ForeignKey, 
-                              CASCADE)
+                              CASCADE, OneToOneField)
+
+# Signal to create or update User profile
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
 import markdown
 import bleach
 
@@ -47,6 +52,9 @@ class MessageModel(Model):
     def notice(self):
         if 'notice' in self.metadata: 
             return self.metadata['notice']
+    
+    def notices(self):
+        return self.metadata.get('notices',[])
 
     # Meta
     class Meta:
@@ -55,5 +63,14 @@ class MessageModel(Model):
         verbose_name_plural = 'messages'
         ordering = ('-timestamp',)
 
-        
-   
+class UserProfile(Model):
+    user = OneToOneField(User, on_delete=CASCADE)
+    # Add additional fields here
+    bot_data = JSONField(default=dict)
+     
+
+@receiver(post_save, sender=User)
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+    instance.userprofile.save()

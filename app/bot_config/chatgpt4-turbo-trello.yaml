@@ -1,23 +1,20 @@
-name: titan
+name: chatgpt-trello
 steps:
   - class: Draft
-  - class: BedrockPrompt
-    config:
-      maxPromptLength: 25000
+  - class: ChatGPTPrompt
+  - class: ChatGPTGuide
+    config: 
       before: |
         You are an helpful assistant. Answer questions in a concise way. If you are unsure about the answer say 'I am unsure'
 
-      after: | 
+      after: |
         Please respond in markdown format with two spaces at the end of every sentence.
         FYI in case its required, the current time is {current_time}.  
-        
-        Assistant: 
-  - class: Titan
+  - class: FitContext
     config:
-      maxAnswerTokens: 512
-      temperature: 0
-      topp: 0.9
-  - class: BedrockAsk
+      maxPromptLength: 1000
+  - class: Trello
+  - class: ChatGPTAsk
     config:
-      model: amazon.titan-tg1-large
+      model: gpt-4-turbo-preview
   - class: Reply

@@ -6,6 +6,14 @@ class Reply(Step):
         
         if 'draft' in payload:
             payload['reply'] = payload['draft']
+
+            payload['reply']['metadata'] = payload['reply'].get('metadata', {})
+
+            if payload['notices']:
+                payload['reply']['metadata']['notices'] = payload['notices']
+
+            if payload['user_profile_bot_data']:
+                payload['reply']['metadata']['user_profile_bot_data'] = payload['user_profile_bot_data']
         
         return payload
 

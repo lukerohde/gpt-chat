@@ -21,7 +21,13 @@
                 {{ message.markdown|safe }}
                 <br>
             </div>
-            <span class="message-metadata small d-block text-end text-muted">{{ message.timestamp|date:"Y-m-d H:i" }}</span>
+            <span class="message-metadata small d-block text-end text-muted">
+                {{ message.timestamp|date:"Y-m-d H:i" }}
+                {% for notice in message.notices %}
+                    <p>{{ notice }}</p>
+                {% endfor %}    
+            </span>
+            
         </li>
     {% endif %}
 {% endfor %}

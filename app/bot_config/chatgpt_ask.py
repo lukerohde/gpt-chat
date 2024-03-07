@@ -36,8 +36,7 @@ class ChatGPTAsk(Step):
                 "model": self.config.model or "gpt-4",
                 "messages": messages
             }
-            print(payload)
-
+            
             async with session.post(url, json=payload, headers=headers) as response:
                 result =  await response.text()
                     

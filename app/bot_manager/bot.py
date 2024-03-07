@@ -196,9 +196,10 @@ class Bot:
                 if 'draft' in payload:
                     del payload["draft"]
             else:
+                # draft messages are posted, and not persisted, by the chat server
                 msg = payload['draft']
                 msg['metadata'] = msg.get('metadata', {})
-                msg['metadata']['notice'] = f'{message}'
+                msg['metadata']['notice'] = f'{message}' # this is an ephemeral status update
                 msg['status'] = 'draft'
                 
             #print(f"Sending {msg}")

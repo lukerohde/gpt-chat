@@ -11,6 +11,11 @@ class Draft(Step):
             'body': '¯\_(ツ)_/¯'
         }
 
+        if 'user_profile_bot_data' not in payload:
+            payload['user_profile_bot_data'] = {}
+
+        payload['notices'] = []
+
         return payload
 
 if __name__ == "__main__":
