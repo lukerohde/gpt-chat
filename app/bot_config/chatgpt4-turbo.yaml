@@ -1,18 +1,19 @@
 name: chatgpt-4-turbo
 steps:
   - class: Draft
-  - class: Chatml
-  - class: Guide
+  - class: ChatGPTPrompt
+  - class: ChatGPTGuide
     config: 
       before: |
         You are an helpful assistant. Answer questions in a concise way. If you are unsure about the answer say 'I am unsure'
 
       after: |
         Please respond in markdown format with two spaces at the end of every sentence.
-        The current time is {current_time}.  
-        
-        Answer: 
-  - class: Gpt
+        FYI in case its required, the current time is {current_time}.  
+  - class: FitContext
+    config:
+      maxPromptLength: 1000
+  - class: ChatGPTAsk
     config:
       model: gpt-4-turbo-preview
   - class: Reply

@@ -9,9 +9,10 @@ steps:
 
       after: |
         Please respond in markdown format with two spaces at the end of every sentence.
-        The current time is {current_time}.  
-        
-        Answer: 
+        FYI in case its required, the current time is {current_time}.  
+  - class: FitContext
+    config:
+      maxPromptLength: 12000
   - class: Gpt
     config:
       model: gpt-3.5-turbo

@@ -15,7 +15,7 @@ sys.path.append('./bot_config/')
 import bedrock
 
 
-class Ask_bedrock(Step):
+class BedrockAsk(Step):
 
     async def process(self, payload):
         
@@ -59,7 +59,7 @@ class Ask_bedrock(Step):
                     answer = json.dumps(response_body)
                 
             except botocore.exceptions.ClientError as error:
-                answer = f"Error Code: error.response['Error']['Code']\n{error.response['Error']['Message']}"
+                answer = f"Error Code: {error.response['Error']['Code']}\n{error.response['Error']['Message']}"
                 if  error.response['Error']['Code'] == 'AccessDeniedException':
                     answer += f"\
                     \nTo troubeshoot this issue please refer to the following resources.\
@@ -74,4 +74,4 @@ class Ask_bedrock(Step):
         return f"querying aws bedrock's {self.config.model}..."
 
 if __name__ == "__main__":
-    Ask_bedrock.main()
+    BedrockAsk.main()

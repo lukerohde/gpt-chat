@@ -2,7 +2,7 @@ from bot_manager.bot_step import Step
 from datetime import datetime
 import pytz
      
-class Guide(Step):
+class ChatGPTGuide(Step):
 
     async def process(self, payload):
 
@@ -34,4 +34,4 @@ class Guide(Step):
     
 
 if __name__ == "__main__":
-    Guide.main()
+    ChatGPTGuide.main()

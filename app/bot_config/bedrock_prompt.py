@@ -2,7 +2,7 @@ from bot_manager.bot_step import Step
 from datetime import datetime
 import pytz
      
-class Prompt(Step):
+class BedrockPrompt(Step):
 
     async def process(self, payload):
         messages=payload['messages']
@@ -26,7 +26,7 @@ class Prompt(Step):
             after_message = after_message.replace("{current_time}", melbourne_time.isoformat())
 
         strings = [f"\n\
-            {'Answer: ' if message['user'] == self.bot_name else 'Question: '} \
+            {'Assistant: ' if message['user'] == self.bot_name else 'User: '} \
             {message['body']}\
             "
             for message in messages]

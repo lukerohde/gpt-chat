@@ -1,7 +1,7 @@
 name: titan-lite
 steps:
   - class: Draft
-  - class: Prompt
+  - class: BedrockPrompt
     config:
       maxPromptLength: 25000
       before: |
@@ -9,15 +9,15 @@ steps:
 
       after: | 
         Please respond in markdown format with two spaces at the end of every sentence.
-        The current time is {current_time}.  
+        FYI in case its required, the current time is {current_time}.  
         
-        Answer:
+        Assistant:
   - class: Titan
     config:
       maxAnswerTokens: 512
       temperature: 0
       topp: 0.9
-  - class: Ask_bedrock
+  - class: BedrockAsk
     config:
       model: amazon.titan-text-lite-v1
   - class: Reply

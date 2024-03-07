@@ -5,7 +5,7 @@ import json
 import os
 from aiohttp import ClientSession
 
-class Gpt(Step):
+class ChatGPTAsk(Step):
 
 
     async def process(self, payload):
@@ -49,4 +49,4 @@ class Gpt(Step):
 
 
 if __name__ == "__main__":
-    Gpt.main()
+    ChatGPTAsk.main()

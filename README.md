@@ -20,10 +20,9 @@ Get started by running `./setup` which will;
 * run you migrations 
 * and setup your django root user.
 
-You also get the option to setup a docker-compose.override.yml file for your local environment.  The docker-compose.override.yml.example is what I use for local mac development.  
+After setup run `./go`
 
-It maps the local files into the containers so you can do some programming.  It will hang the containers so you can 
-exec in and run commands.
+If you setup a docker-compose.override.yml file for your local mac environment, it maps the local files into the containers so you can do some programming.  It will hang the containers so you can exec in and run commands.
 
 Run `docker-compose up -d` to run the containers - or just `./go`
 
@@ -56,6 +55,26 @@ So far I've
 
 It's quiet a bit more complex than narrowfail's beautifully simple app.
 
+## Principles ##
+
+These principles are aspirational.  They originated in business process automation projects that predated the AI boom.  The intent was to ship frequent minor improvements that add value, while at no point replacing a low paid administrative worker with a highly paid dev-ops engineer.   By measuring the amount of human intervention and exception handling in each business service, we could prioritise our automation efforts.  Eventually a large majority of business processes where 'automated' except humans were in the loop, approving every step.  And if anything went wrong, humans could pickup the slack while we fixed stuff.  There were all sorts of tasks that were intractible and could only be done by humans.  Many of these could now be done by foundation models.  By adopting these principles for AI automation projects, the human stays in control and is amplified.
+ 
+- Bots are stateless
+- Bots are micro-services
+- Bots are reactive
+- Bots are transparent
+- Bots shall do no task that cannot be corrected or completed by a human
+- Bots have a persona
+- Failed requests can be debugged and replayed, if not already corrected by a human 
+- Bots alert to failure
+- The gap between expectation and reality is measured and closed
+- Bots are easy to grok, pipelines of steps
+- Hackers of all levels can make their bot
+- Bots can work on bots - this is new
+- Bots can delegate to bots 
+- Bots are idempotent
+- Bots can handle random input
+- Bots shall send no message on behalf of the user without approval
 
 ## Architecture ##
 

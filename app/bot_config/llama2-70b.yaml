@@ -2,7 +2,7 @@
 name: llama2-70b-chat
 steps:
   - class: Draft
-  - class: Prompt
+  - class: BedrockPrompt
     config:
       maxPromptLength: 25000
       before: |
@@ -10,15 +10,15 @@ steps:
 
       after: | 
         Please respond in markdown format with two spaces at the end of every sentence.
-        The current time is {current_time}.  
+        FYI in case its required, the current time is {current_time}.  
         
-        Answer:
+        Assistant:
   - class: Llama
     config:
       maxAnswerTokens: 512
       temperature: 0
       topp: 0.9
-  - class: Ask_bedrock
+  - class: BedrockAsk
     config:
       model: meta.llama2-70b-chat-v1
   - class: Reply

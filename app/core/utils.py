@@ -61,7 +61,7 @@ def send_message_notifications(message):
         message_history = MessageModel.objects.filter(
                     Q(recipient=message.recipient, user=message.user) |
                     Q(recipient=message.user, user=message.recipient)
-                ).order_by('-timestamp')[:10][::-1]
+                ).order_by('-timestamp')[:40][::-1] # enable 20 questions - need to protect from token overload
         
         result = async_to_sync(send_message_to_bot)(bot.end_point, Token.objects.filter(user=bot.bot_user).first(), bot_notification(message_history))
     return result

@@ -3,7 +3,7 @@ import pytz
 import datetime
 import dateutil.parser
 
-class Chatml(Step):
+class ChatGPTPrompt(Step):
 
     async def process(self, payload):
         messages=payload['messages']
@@ -37,4 +37,4 @@ class Chatml(Step):
         return results
 
 if __name__ == "__main__":
-    Chatml.main()
+    ChatGPTPrompt.main()
