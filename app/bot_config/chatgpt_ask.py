@@ -9,6 +9,9 @@ class ChatGPTAsk(Step):
 
 
     async def process(self, payload):
+        if payload['type'] != 'direct_message': 
+            return payload
+
         payload['openai'] = await self._ask_openai(payload['chatml'])
         if not 'draft' in payload: 
             payload['draft'] = {}
@@ -36,7 +39,7 @@ class ChatGPTAsk(Step):
                 "model": self.config.model or "gpt-4",
                 "messages": messages
             }
-            
+
             async with session.post(url, json=payload, headers=headers) as response:
                 result =  await response.text()
                     

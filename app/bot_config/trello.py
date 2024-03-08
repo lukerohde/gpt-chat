@@ -9,6 +9,10 @@ class Trello(Step):
         
         if payload['user_profile_bot_data']['trello_api_key']:
             # TODO Trello Stuff
+            payload['reminder'] = {
+                'target': 'Trello',
+                'countdown_seconds': 10
+            }
             pass 
         else:
             payload['notices'].append("For this bot to connect to your trello task list, please provide your trello API token.")

@@ -99,6 +99,44 @@ services:
     volumes:
       - redis_data:/bitnami/redis/data
     command: /opt/bitnami/scripts/redis/run.sh --maxmemory 100mb
+  celery:
+    build:
+      context: .
+      dockerfile: ./app.dockerfile
+    restart: unless-stopped
+    environment:
+      - DJANGO_SECRET_KEY
+      - APP_PORT
+      - BOT_PORT
+      - POSTGRES_DB
+      - POSTGRES_HOST
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_PORT
+      - REDIS_HOST
+      - REDIS_PASSWORD
+      - REDIS_PORT_NUMBER
+      - DJANGO_SUPERUSER_USERNAME
+      - DJANGO_SUPERUSER_PASSWORD
+      - DJANGO_SUPERUSER_EMAIL
+      - DJANGO_SUPERUSER_TOKEN
+      - OPENAI_API_KEY
+      - OPENAI_COMPLETION_MODEL
+      - OPENAI_EMBEDDING_MODEL
+      - OPENAI_TOKENS_LENGTH
+      - OPENAI_TEMPERATURE
+      - OPENAI_RESPONSE_TOKENS
+      - OPENAI_MAX_TOKENS
+      - PYTHONPATH=/home/pyuser/app
+      - CHAT_API
+      - BOT_API
+    command: celery -A chat worker --loglevel=info
+    volumes:
+      - .:/app
+    links:
+      - pg
+      - redis
+      - bots
   # https://github.com/wmnnd/nginx-certbot
 volumes:
   pg_data:

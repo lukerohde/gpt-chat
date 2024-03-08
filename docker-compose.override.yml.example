@@ -47,6 +47,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
+  celery:
+    volumes:
+        - ./app:/home/pyuser/app:delegated
 volumes:
   app_user:
   pg_data:

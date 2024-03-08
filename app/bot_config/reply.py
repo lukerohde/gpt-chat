@@ -15,6 +15,9 @@ class Reply(Step):
             if payload['user_profile_bot_data']:
                 payload['reply']['metadata']['user_profile_bot_data'] = payload['user_profile_bot_data']
         
+            if payload['reminder']:
+                payload['reply']['metadata']['reminder'] = payload['reminder']
+
         return payload
 
 if __name__ == "__main__":

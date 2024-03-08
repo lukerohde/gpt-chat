@@ -9,7 +9,7 @@ from rest_framework.authentication import SessionAuthentication, TokenAuthentica
 from chat import settings
 from core.serializers import MessageModelSerializer, UserModelSerializer
 from core.models import MessageModel
-from core.utils import send_message_notifications
+from core.utils import send_message_notifications, send_bot_reminder
 
 class CsrfExemptSessionAuthentication(SessionAuthentication):
     """
@@ -65,6 +65,8 @@ class MessageModelViewSet(ModelViewSet):
 
         send_message_notifications(message)
 
+        send_bot_reminder(message)
+        
 
 class UserModelViewSet(ModelViewSet):
     queryset = User.objects.all()

@@ -190,12 +190,21 @@ try:
 except ImportError:
     pass
 
+REDIS_HOST = (f"redis://:{os.environ['REDIS_PASSWORD']}@{os.environ['REDIS_HOST']}:{os.environ['REDIS_PORT_NUMBER']}")
+
 ASGI_APPLICATION = 'chat.asgi.application'
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [(f"redis://:{os.environ['REDIS_PASSWORD']}@{os.environ['REDIS_HOST']}:{os.environ['REDIS_PORT_NUMBER']}")]
+            "hosts": [f'{REDIS_HOST}/1']
         },
     },
 }
+
+# Celery Configuration
+CELERY_BROKER_URL = f'{REDIS_HOST}/2'
+CELERY_RESULT_BACKEND = f'{REDIS_HOST}/2'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
