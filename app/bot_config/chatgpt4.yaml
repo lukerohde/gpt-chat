@@ -10,7 +10,7 @@ steps:
       after: |
         Please respond in markdown format with two spaces at the end of every sentence.
         FYI in case its required, the current time is {current_time}.  
-  - class: FitContext
+  - class: ChatGPTFitContext
     config:
       maxPromptLength: 12000
   - class: ChatGPTAsk

@@ -9,13 +9,13 @@ class Reply(Step):
 
             payload['reply']['metadata'] = payload['reply'].get('metadata', {})
 
-            if payload['notices']:
+            if 'notices' in payload:
                 payload['reply']['metadata']['notices'] = payload['notices']
 
-            if payload['user_profile_bot_data']:
+            if 'user_profile_bot_data' in payload:
                 payload['reply']['metadata']['user_profile_bot_data'] = payload['user_profile_bot_data']
         
-            if payload['reminder']:
+            if 'reminder' in payload:
                 payload['reply']['metadata']['reminder'] = payload['reminder']
 
         return payload

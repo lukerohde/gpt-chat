@@ -27,8 +27,8 @@ def bot_message_notification(message, type = None):
     message_history = MessageModel.objects.filter(
                     Q(recipient=message.recipient, user=message.user) |
                     Q(recipient=message.user, user=message.recipient)
-                ).order_by('-timestamp') # [:40][::-1] # enable 20 questions - need to protect from token overload
-        
+                ).order_by('-timestamp')[::-1] 
+
     user_profile_bot_data = message.user.userprofile.bot_data.get(message.recipient.username, {})
         
     payload = [{
@@ -101,7 +101,6 @@ def send_bot_reminder(message):
                 token = Token.objects.filter(user=bot.bot_user).first()
         
                 payload = bot_message_notification(message, 'reminder')
-                payload['reminder'] = reminder
                 
                 #print(payload)
                 #schedule send via celery

@@ -1,4 +1,5 @@
 from bot_manager.bot_step import Step
+
 import pytz 
 import datetime
 import dateutil.parser
@@ -12,7 +13,7 @@ class ChatGPTPrompt(Step):
 
         return payload
     
-    def dress_content(self, message):
+    def _dress_content(self, message):
         content = message['body']
 
         if message["user"] != self.bot_name:
@@ -26,13 +27,19 @@ class ChatGPTPrompt(Step):
             content = content.replace('{timestamp}', str(melbourne_time))            
         
         return content 
+
+    def _format_chatml(self, message, bot_name):
+        
+        chat_ml = { 
+            "content": self._dress_content(message),
+            "name": message["user"],
+            "role": "assistant" if message["user"] == bot_name else "user"
+         }
+
+        return chat_ml
     
     def _chatml(self, messages):
-        results = [{ 
-            "content": self.dress_content(message),
-            "name": message["user"],
-            "role": "assistant" if message["user"] == self.bot_name else "user"
-         } for message in messages]
+        results = [self._format_chatml(message, self.bot_name) for message in messages]
         
         return results
 
