@@ -249,7 +249,7 @@ class Bot:
 
                             payload['status'] = f"Error in {step.activity}"
                             await self.queue_manager.async_enqueue(step.dlq, {"payload": payload, "error_message": error_message, "stacktrace": stacktrace})
-                            print(f"Error enqueued into {step.dlq}. {error_message} \n\n {stacktrace}")
+                            print(f"Error enqueued into {step.dlq}. {error_message}")
                 
                 #print(f"{step.inbox} stopped")
 

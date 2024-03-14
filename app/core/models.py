@@ -37,7 +37,8 @@ class MessageModel(Model):
     
     def markdown(self):
         sanitized_body = bleach.clean(self.body)
-        return markdown.markdown(sanitized_body, extensions=['fenced_code'])
+        return markdown.markdown(sanitized_body, extensions=['fenced_code', 'tables'])
+
 
     def save(self, *args, **kwargs):
         """
