@@ -1,0 +1,56 @@
+name: chatgpt-4-jira-1p
+steps:
+  - class: Draft
+  - class: ChatGPTPrompt
+  - class: ChatGPTDirector
+    config:
+      model: gpt-4-turbo-preview
+      classify: |
+        You are a natural language task classifier for a chatbot.  
+        Your job is to assess if a user is asking us to perform a
+        a task that the chatbot is capable of performing.  
+
+        You will also classify the task against our list of capabilities. 
+        Capabilities come in action/object pairs described like { "action": "create", "object": "email"}. 
+
+        Here are some examples of user requests the chatbot supports, with your expected response.
+        
+        {request_response_examples}
+        
+        Only reply with JSON and only use actions and objects shown in these examples.  Don't make up any actions or objects.
+        If the request is not about one of our capabilities answer with an empty json payload {}
+      capabilities: 
+        jira:
+          create:
+            - Can you create jira tickets for the following stories...
+            - Create a tix for ...
+          update:
+            - can you update the [description of jira tix OR KEY ID] tix to done
+            - can you assign the [description of jira tix OR KEY ID] tix to Zoey
+            - can you put [description of jira tix OR KEY ID] in sprint 3
+          search:
+            - I'm looking for a [description of jira tix] ticket
+            - do we have a ticket for [description of a jira tix]
+            - can you find a ticket about [description of a jira tix]
+          draft:
+            - draft tickets for the following [list]
+            - give me a ticket description for [x]...
+            - can you write a ticket for [y]...
+  - class: ChatGPTJira
+    model: gpt-4-turbo-preview
+  - class: ChatGPTGuide
+    config: 
+      before: |
+        You are an helpful assistant. Answer questions in a concise way. If you are unsure about the answer say 'I am unsure'
+
+      after: |
+        Please respond in markdown format with two spaces at the end of every sentence.
+        FYI in case its required, the current time is {current_time}.  
+  - class: ChatGPTFitContext
+    config:
+      maxPromptLength: 12000
+  - class: ChatGPTUserData
+  - class: ChatGPTAsk
+    config:
+      model: gpt-4-turbo-preview
+  - class: Reply

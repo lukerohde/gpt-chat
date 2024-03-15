@@ -71,7 +71,7 @@ class ChatGPTJira(Step):
                     If you can't suggest anything for the description and acceptance criteria
                     prefix the ticket title with '[placeholder]' so we know to groom this
                     ticket.  If you have no epic link leave it blank.  
-                    Preserve any provided URLs in the description.  
+                    Preserve any provided URLs in the description as raw URLs, not markdown or hyperlinks.  
                     ---
                     # Ticket:  Implement feature XYZ
 
@@ -122,9 +122,9 @@ class ChatGPTJira(Step):
 
                 # Construct prompt for OpenAI to generate a JQL search
                 instruction = self.config.get('ticket_format', "" ) or """ 
-                    Given the chat history please convert the proposed tickets into machine readable json
-                    for the Jira API given the following json template.
-                    ```
+                    Given the chat history, please convert the proposed tickets into machine-readable JSON 
+                    for the Jira API using the following template. 
+                    
                     [{
                         "update": {},
                         "fields": {
@@ -141,19 +141,22 @@ class ChatGPTJira(Step):
                             },
                             "[JIRA_TEAM_FIELD]": "[TEAM_ID]",
                             "[JIRA_EPIC_FIELD]": "[EPIC_ISSUE_KEY]",
-                            "[JIRA_SIZE_FIELD]": "[SIZE]",
+                            "[JIRA_SIZE_FIELD]": [SIZE],
                             "labels": [],
                             "[JIRA_AC_FIELD"]: "[INSERT ACCEPTANCE CRITERIA]"
                         }
                     }]
 
-                    ```
-
                     Also substitute in following keys and values from the user's jira profile configuration.
                     {jira_config}
 
-                    Please answer in pure json as your response will be directly parsed by json.loads
+                    If you have no EPIC_ISSUE_KEY leave it blank. 
+
+                    Provide the response in pure JSON format without Markdown or any other formatting. 
+                    The response should be ready to parse with json.loads. 
+
                     """
+
                 instruction = instruction.replace('{jira_config}', json.dumps(jira_config))
                 
                 chatml = self.get_chatml(payload, instruction)
@@ -164,10 +167,20 @@ class ChatGPTJira(Step):
 
                 try: 
                     response = await ChatGPT.ask(chatml, model)
-                    tickets = json.loads(response['reply']) 
-                    #results = self.create_tickets(tickets, profile)
                     
-                    payload['draft']['body'] = f"```json\n{tickets}\n```"
+                    # remove json markdown that chatgpt often does
+                    pattern = r'^json\n|\n$'
+                    cleaned_json_string = re.sub(pattern, '', response['reply'], flags=re.MULTILINE)
+                    tickets = json.loads(cleaned_json_string)
+
+                    results = self.create_tickets(tickets, profile)
+
+                    reply = ""
+                    
+                    for result in results.get('success', []) + results.get('failure', []):
+                        reply += f"\n- {result}"
+                    
+                    payload['draft']['body'] = reply
                 except json.JSONDecodeError:
                     payload['draft']['body'] = f"JSON decode error in {self.__class__.__name__}\n\n```json\n{response}```"
                     
@@ -235,8 +248,8 @@ class ChatGPTJira(Step):
 
 
     def create_tickets(self, tickets, profile):
-        errors = []
-        results = []
+        successes = []
+        failures = []
             
         for ticket in tickets:
             print(ticket)
@@ -250,19 +263,17 @@ class ChatGPTJira(Step):
                 )
                 response.raise_for_status()
                 result = response.json()
-                results.append(f"- created {result.get('key', '')} {result.get('fields', {}).get('summary', '')}")
+                successes.append(f"Created {result.get('key', '')} {ticket['fields']['summary']}")
 
-                return response.json()
             except requests.exceptions.RequestException as e:
-                errors.append(
+                #import ipdb; ipdb.set_trace()
+                failures.append(
                         f"""
-                            could not create '{ticket.get('fields', {}).get('summary', '')}'
-                            ```json
-                             {json.dumps(ticket)}
-                            ```
-                            """
-                        )
-        return {"results": results, "errors": errors}
+                            Could not create '{ticket.get('fields', {}).get('summary', '')}'
+                            { json.dumps(e.response.json(), indent=2 ) }
+                        """)
+
+        return {"success": successes, "failure": failures}
 
     
     def search(self, jql, profile):
@@ -281,7 +292,7 @@ class ChatGPTJira(Step):
             return { 'error': str(e) }
 
     def extract_info_html_table(self, jira_payload):
-        base_url = "https://wesdigital.atlassian.net/browse/"
+        base_url = "https://wesdigital.atlassian.net/browse/" # TODO Add to configuration?
         # Start the HTML table with the header
         html_lines = ['<table>', '<tr><th>Status</th><th>Assignee</th><th>Ticket</th></tr>']
 
@@ -383,3 +394,4 @@ class ChatGPTJira(Step):
 
 if __name__ == "__main__":
     ChatGPTJira.main()
+
