@@ -3,6 +3,7 @@ from bot_config.chatgpt import ChatGPT
 import requests
 from requests.exceptions import RequestException
 import json 
+import re
 
 class ChatGPTJira(Step):
 
@@ -12,15 +13,17 @@ class ChatGPTJira(Step):
             
             profile = payload['user_profile_bot_data']
             action = payload['capability']['action']
+            jira_config = {k: v for k, v in profile.items() if k.startswith('JIRA_') and not k == 'JIRA_API_TOKEN'}
+                
             if action == 'search':
                 # Construct prompt for OpenAI to generate a JQL search
-                jira_config = {k: v for k, v in profile.items() if k.startswith('JIRA_')}
                 instruction = self.config.get('jql_prompt', "" ) or """ 
                     Given the chat history and the following JIRA configuration, 
                     please reply with valid JQL to be used with JIRA's search API.
                     The user's request contains keyworks that maybe found the epic name, 
                     summary, description or some combination there of.  More search results 
                     are better.  Reply only in JQL as your response will be directly used in an API call.
+                    For requests about 
                     Order by most to least recently updated. Leave the jql bare without quotes.
                     {jira_config}
 
@@ -57,37 +60,120 @@ class ChatGPTJira(Step):
                 return payload 
 
                 # Add the system instruction to payload['chatml']
+            elif action == 'draft': 
+
+                # Construct prompt for OpenAI to generate a JQL search
+                instruction = self.config.get('ticket_format', "" ) or """ 
+                    Given the chat history and the following JIRA configuration, 
+                    please reply with one or more jira tickets in the following format
+
+                    The user will give you feedback, so fill in the blanks as best you can.
+                    If you can't suggest anything for the description and acceptance criteria
+                    prefix the ticket title with '[placeholder]' so we know to groom this
+                    ticket.  If you have no epic link leave it blank.  
+                    Preserve any provided URLs in the description.  
+                    ---
+                    # Ticket:  Implement feature XYZ
+
+                    ## Description
+                    As a [User Role], I want [Feature/Functionality] so that [Benefit/Outcome].
+
+                    [INSERT TEAM/CUSTOMER CONTACT IF WE HAVE ONE]
+                    [INSERT LINKS AND REFERENCE DOCO IF WE HAVE ANY]
+
+                    ## Acceptance Criteria
+                    1. Criteria A
+                    2. Criteria B
+                    3. Criteria C
+
+                    ## Epic Link
+                    - **Epic:** [Epic Title](Epic Link) [DO NOT MAKE THIS UP!]
+
+                    ## Assignee
+                    - **Assigned to:** [Assignee Name]
+
+                    ## Sprint
+                    - **Sprint:** [Sprint x]
+                    ---
+
+                    {jira_config}
+
+                    Tickets: 
+                    """
+                instruction = instruction.replace('{jira_config}', json.dumps(jira_config))
+                
+                chatml = self.get_chatml(payload, instruction)
+                print(json.dumps(chatml, indent=2))
+
+                # Call OpenAI for JQL
+                model = self.config.get('model',  "gpt-3.5-turbo")
+
+                try: 
+                    response = await ChatGPT.ask(chatml, model)
+                    tickets = response['reply']
+                    
+                    payload['draft']['body'] = tickets
+                except json.JSONDecodeError:
+                    payload['draft']['body'] = f"Error in {self.__class__.__name__}\n\n{response}"
+                    
+                return payload 
+
             elif action == 'create': 
-                pass
-                # Construct the prompt with user data and template API json, and user request
-                # Call OpenAI to generate JSON for each ticket
-                # Call Jira API for each ticket (later we'll move this to after approval)
-                # Render the ticket links in markdown
-                # Create a payload['draft']['body'] with the ticket results
-            
-                # TEMPLATE_FILE=template-story-v2.json
-                # {
-                #     "update": {},
-                #     "fields": {
-                #         "summary": "[INSERT TICKET TITLE HERE]",
-                #         "issuetype": {
-                #         "id": "JIRA_STORY_TYPE_ID"
-                #         },
-                #         "project": {
-                #         "key": "JIRA_PROJECT_ID"
-                #         },
-                #         "description": "As a [INSERT ROLE], I <want/need/can/etc> [INSERT STORY GOAL] so that [INSERT STORY BENEFIT].\n",
-                #         "priority": {
-                #         "id": "4"
-                #         },
-                #         "JIRA_TEAM_FIELD": "TEAM_ID",
-                #         "JIRA_EPIC_FIELD": "EPIC_ID",
-                #         "JIRA_SIZE_FIELD": "SIZE",
-                #         "labels": [],
-                #         "JIRA_AC_FIELD": "* Criteria 1\n \n* Criteria 2\n \n* Criteria 3"
-                #     }
-                # }
-            
+
+                # Construct prompt for OpenAI to generate a JQL search
+                instruction = self.config.get('ticket_format', "" ) or """ 
+                    Given the chat history please convert the proposed tickets into machine readable json
+                    for the Jira API given the following json template.
+                    ```
+                    [{
+                        "update": {},
+                        "fields": {
+                            "summary": "[INSERT TICKET TITLE HERE]",
+                            "issuetype": {
+                            "id": "[JIRA_STORY_TYPE_ID]"
+                            },
+                            "project": {
+                            "key": "[JIRA_PROJECT_ID]"
+                            },
+                            "description": "[INSERT DESCRIPTION]",
+                            "priority": {
+                            "id": "4"
+                            },
+                            "[JIRA_TEAM_FIELD]": "[TEAM_ID]",
+                            "[JIRA_EPIC_FIELD]": "[EPIC_ISSUE_KEY]",
+                            "[JIRA_SIZE_FIELD]": "[SIZE]",
+                            "labels": [],
+                            "[JIRA_AC_FIELD"]: "[INSERT ACCEPTANCE CRITERIA]"
+                        }
+                    }]
+
+                    ```
+
+                    Also substitute in following keys and values from the user's jira profile configuration.
+                    {jira_config}
+
+                    Please answer in pure json as your response will be directly parsed by json.loads
+                    """
+                instruction = instruction.replace('{jira_config}', json.dumps(jira_config))
+                
+                chatml = self.get_chatml(payload, instruction)
+                print(json.dumps(chatml, indent=2))
+
+                # Call OpenAI for JQL
+                model = self.config.get('model',  "gpt-3.5-turbo")
+
+                try: 
+                    response = await ChatGPT.ask(chatml, model)
+                    tickets = json.loads(response['reply']) 
+                    #results = self.create_tickets(tickets, profile)
+                    
+                    payload['draft']['body'] = f"```json\n{tickets}\n```"
+                except json.JSONDecodeError:
+                    payload['draft']['body'] = f"JSON decode error in {self.__class__.__name__}\n\n```json\n{response}```"
+                    
+
+                return payload 
+                
             
             elif action == "update":
                 pass
@@ -106,7 +192,7 @@ class ChatGPTJira(Step):
     def actionable(self, payload):
         actionable = bool(payload['capability'] and \
             payload['capability']['object'] and \
-            payload['capability']['action'] in ('create', 'update', 'search') )
+            payload['capability']['action'] in ('create', 'update', 'search', 'draft') )
 
 
         # Define a list of required JIRA configuration fields and their corresponding messages
@@ -147,37 +233,36 @@ class ChatGPTJira(Step):
     def get_ticket():
         pass
 
-        # RUBY CODE TO BE CONVERTED TO PYTHON AND UPDATED TO WORK
-        # jira_result = {}
-		# RestClient::Request.new(
-		# 	:method => :get,
-		# 	:url => ENV['JIRA_API_URL'] + "/#{id}",
-		# 	:user => ENV['JIRA_USER'],
-		# 	:password => ENV['JIRA_API_TOKEN'],
-		# 	:headers => { :accept => :json, :content_type => :json }
-		# ).execute do |response, request, result|
-		# 	jira_result = JSON.parse(response.body) rescue {}
-		# end
 
-		# jira_result
-        
-    # RUBY CODE TO BE CONVERTED TO PYTHON
-	# def create_ticket(payload)
-	# 	jira_result = {}
-	# 	RestClient::Request.new(
-	# 		:method => :post,
-	# 		:url => ENV['JIRA_API_URL'],
-	# 		:user => ENV['JIRA_USER'],
-	# 		:password => ENV['JIRA_API_TOKEN'],
-	# 		:payload => payload.to_json,
-	# 		:headers => { :accept => :json, :content_type => :json }
-	# 	).execute do |response, request, result|
-	# 		jira_result = JSON.parse(response.body) rescue {}
-	# 		jira_result["summary"] = payload['fields']['summary']
-	# 	end
+    def create_tickets(self, tickets, profile):
+        errors = []
+        results = []
+            
+        for ticket in tickets:
+            print(ticket)
+            try:
+                response = requests.post(
+                    url=profile['JIRA_API_URL'],
+                    auth=(profile['JIRA_USER'], profile['JIRA_API_TOKEN']),
+                    headers={'Content-Type': 'application/json', 'Accept': 'application/json'},
+                    json=ticket,
+                    verify=False #TODO bot session that sets verify to either true or the CA_CERT if in ENV
+                )
+                response.raise_for_status()
+                result = response.json()
+                results.append(f"- created {result.get('key', '')} {result.get('fields', {}).get('summary', '')}")
 
-	# 	jira_result
-	# end
+                return response.json()
+            except requests.exceptions.RequestException as e:
+                errors.append(
+                        f"""
+                            could not create '{ticket.get('fields', {}).get('summary', '')}'
+                            ```json
+                             {json.dumps(ticket)}
+                            ```
+                            """
+                        )
+        return {"results": results, "errors": errors}
 
     
     def search(self, jql, profile):

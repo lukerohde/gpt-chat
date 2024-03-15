@@ -19,12 +19,6 @@ steps:
         
         Only reply with JSON and only use actions and objects shown in these examples.  Don't make up any actions or objects.
         If the request is not about one of our capabilities answer with an empty json payload {}
-      approval: |
-        You are a natural language task classifier for a chatbot.
-        The chatbot has proposed an action for { capability }.
-        Has the user approved the action?  Please reply in json with either 
-        { "status": "approved" }
-        { "status": "denied" }
       capabilities: 
         jira:
           create:
@@ -38,6 +32,10 @@ steps:
             - I'm looking for a [description of jira tix] ticket
             - do we have a ticket for [description of a jira tix]
             - can you find a ticket about [description of a jira tix]
+          draft:
+            - draft tickets for the following [list]
+            - give me a ticket description for [x]...
+            - can you write a ticket for [y]...
   - class: ChatGPTJira
     model: gpt-4-turbo-preview
   - class: ChatGPTGuide
