@@ -4,6 +4,7 @@ import requests
 from requests.exceptions import RequestException
 import json 
 import re
+import textwrap
 
 class ChatGPTJira(Step):
 
@@ -17,18 +18,22 @@ class ChatGPTJira(Step):
                 
             if action == 'search':
                 # Construct prompt for OpenAI to generate a JQL search
-                instruction = self.config.get('jql_prompt', "" ) or """ 
+                instruction = self.config.get('jql_prompt', "" ) or textwrap.dedent(""" 
                     Given the chat history and the following JIRA configuration, 
                     please reply with valid JQL to be used with JIRA's search API.
                     The user's request contains keyworks that maybe found the epic name, 
                     summary, description or some combination there of.  More search results 
-                    are better.  Reply only in JQL as your response will be directly used in an API call.
-                    For requests about 
+                    are better.  
+
+                    If the user asks for current or open tickets include a filter `statuscategory != Done`
+                    
+                    Reply only in JQL as your response will be directly used in an API call.
+                    
                     Order by most to least recently updated. Leave the jql bare without quotes.
                     {jira_config}
 
                     JQL: 
-                    """
+                    """)
                 instruction = instruction.replace('{jira_config}', json.dumps(jira_config))
                 
                 chatml = self.get_chatml(payload, instruction)
@@ -57,13 +62,10 @@ class ChatGPTJira(Step):
                 except json.JSONDecodeError:
                     payload['draft']['body'] = f"Failed to parse JSON returned by {model} in {self.__class__.__name__}\n\n{response['reply']}"
                     
-                return payload 
-
-                # Add the system instruction to payload['chatml']
             elif action == 'draft': 
 
                 # Construct prompt for OpenAI to generate a JQL search
-                instruction = self.config.get('ticket_format', "" ) or """ 
+                instruction = self.config.get('ticket_format', "" ) or textwrap.dedent(""" 
                     Given the chat history and the following JIRA configuration, 
                     please reply with one or more jira tickets in the following format
 
@@ -71,6 +73,7 @@ class ChatGPTJira(Step):
                     If you can't suggest anything for the description and acceptance criteria
                     prefix the ticket title with '[placeholder]' so we know to groom this
                     ticket.  If you have no epic link leave it blank.  
+                    Estimate story points, day-like, fibonnacci, factoring complexity and risks
                     Preserve any provided URLs in the description as raw URLs, not markdown or hyperlinks.  
                     ---
                     # Ticket:  Implement feature XYZ
@@ -94,12 +97,15 @@ class ChatGPTJira(Step):
 
                     ## Sprint
                     - **Sprint:** [Sprint x]
+
+                    ## ESTIMATE
+                    - **STORY POINTS:** [Points]
                     ---
 
                     {jira_config}
 
                     Tickets: 
-                    """
+                    """)
                 instruction = instruction.replace('{jira_config}', json.dumps(jira_config))
                 
                 chatml = self.get_chatml(payload, instruction)
@@ -116,12 +122,10 @@ class ChatGPTJira(Step):
                 except json.JSONDecodeError:
                     payload['draft']['body'] = f"Error in {self.__class__.__name__}\n\n{response}"
                     
-                return payload 
-
             elif action == 'create': 
 
                 # Construct prompt for OpenAI to generate a JQL search
-                instruction = self.config.get('ticket_format', "" ) or """ 
+                instruction = self.config.get('ticket_format', "" ) or textwrap.dedent(""" 
                     Given the chat history, please convert the proposed tickets into machine-readable JSON 
                     for the Jira API using the following template. 
                     
@@ -155,7 +159,7 @@ class ChatGPTJira(Step):
                     Provide the response in pure JSON format without Markdown or any other formatting. 
                     The response should be ready to parse with json.loads. 
 
-                    """
+                    """)
 
                 instruction = instruction.replace('{jira_config}', json.dumps(jira_config))
                 
@@ -183,10 +187,6 @@ class ChatGPTJira(Step):
                     payload['draft']['body'] = reply
                 except json.JSONDecodeError:
                     payload['draft']['body'] = f"JSON decode error in {self.__class__.__name__}\n\n```json\n{response}```"
-                    
-
-                return payload 
-                
             
             elif action == "update":
                 pass
@@ -196,8 +196,61 @@ class ChatGPTJira(Step):
                 # Call Jira API
                 # Render the ticket links in markdown
                 # Create a payload['draft']['body'] with the ticket markdown
-             
+            
+            elif action == "get":
+                # Construct prompt for OpenAI to generate a JQL search
+                instruction = self.config.get('ticket_format', "" ) or textwrap.dedent(""" 
+                    We're going to load tickets from JIRA's API to present them to the user.
+                    Given the chat history, please give the Issue Keys for the those tickets being
+                    referenced.  Do examine the chat history to find relevant issue keys.
+                    
+                    If the the user is asking for a ticket that has no key apparent in 
+                    the chat history, provide very specific JQL.  Reply in this format;
 
+                    { 
+                        "issue_keys": [INSERT ARRAY OF KEYS HERE OR EMPTY ARRAY],
+                        "jql": "INSERT JQL HER OR EMPTY STRING"
+                    }
+                    
+                    The following Jira config might be helpful. 
+                    
+                    {jira_config}
+
+                    Provide the response in pure well formatted JSON format without Markdown 
+                    or any other formatting.  The response can parsed with json.loads without error. 
+
+                    """)
+
+                instruction = instruction.replace('{jira_config}', json.dumps(jira_config))
+                
+                chatml = self.get_chatml(payload, instruction, 6)
+                
+                # Call OpenAI for JQL
+                model = self.config.get('model',  "gpt-3.5-turbo")
+
+                try: 
+                    response = await ChatGPT.ask(chatml, model)
+                    
+                    # remove json markdown that chatgpt often does
+                    pattern = r'^json\n|\n$'
+                    cleaned_json_string = re.sub(pattern, '', response['reply'], flags=re.MULTILINE)
+                    json_results = json.loads(cleaned_json_string)
+
+                    keys = json_results.get('issue_keys', [])
+                    if json_results.get('jql'):
+                        search_results = self.search(json_results.get('jql'), profile)
+                        if not search_results.get('error'):
+                            for issue in search_results.get('issues', []):
+                                keys.append(issue.get('key'))
+                        else:
+                            payload['notices'].append(search_results.get('error'))
+
+                    print(keys)
+                    reply = self.get_tickets(keys, profile)
+
+                    payload['draft']['body'] = reply
+                except json.JSONDecodeError:
+                    payload['draft']['body'] = f"JSON decode error in {self.__class__.__name__}\n\n```json\n{response}```"
             
                       
         return payload 
@@ -205,7 +258,7 @@ class ChatGPTJira(Step):
     def actionable(self, payload):
         actionable = bool(payload['capability'] and \
             payload['capability']['object'] and \
-            payload['capability']['action'] in ('create', 'update', 'search', 'draft') )
+            payload['capability']['action'] in ('create', 'update', 'search', 'draft', 'get') )
 
 
         # Define a list of required JIRA configuration fields and their corresponding messages
@@ -243,8 +296,53 @@ class ChatGPTJira(Step):
         pass
 
 
-    def get_ticket():
-        pass
+    def get_tickets(self, ticket_ids, profile):
+        tickets = ""
+        for ticket_id in ticket_ids: 
+            try:
+                response = requests.get(
+                    url=f"{profile['JIRA_API_URL']}/{ticket_id}",
+                    auth=(profile['JIRA_USER'], profile['JIRA_API_TOKEN']),
+                    headers={'Content-Type': 'application/json', 'Accept': 'application/json'},
+                    verify=False  # TBD use the CA certificate if available in your environment
+                )
+                response.raise_for_status()
+                ticket = response.json()
+                
+                # Format ticket details
+
+                assignee = ticket['fields'].get('assignee', None)
+                assignee_name = assignee.get('displayname') if assignee is not None else 'Unassigned'
+
+                ticket_details = textwrap.dedent(f"""
+# Ticket: {ticket['fields']['summary']}
+
+## Description
+{ticket['fields'].get('description', 'No description provided.')}
+
+## Acceptance Criteria
+{ticket['fields'].get(profile['JIRA_AC_FIELD'], 'No acceptance criteria provided.')}
+
+## Epic Link
+- **Epic:** [{ticket['fields'].get(profile['JIRA_EPIC_FIELD'], 'No Epic')}]([Epic Link])
+
+## Assignee
+- **Assigned to:** {assignee_name}
+
+## Estimate
+- **Story Points:** {ticket['fields'].get(profile['JIRA_SIZE_FIELD'], 'No estimate provided.')}
+
+---
+""")
+                tickets += ticket_details
+
+            except requests.exceptions.RequestException as e:
+                error_message = f"Failed to retrieve ticket {ticket_id}: {str(e)}"
+                tickets += error_message + "\n---\n"
+                print(error_message)
+                
+        return tickets
+            
 
 
     def create_tickets(self, tickets, profile):
@@ -341,46 +439,13 @@ class ChatGPTJira(Step):
             markdown_lines.append(markdown_line)
 
         return "\n".join(markdown_lines)
-
-        ## TRELLO API CALL TO BE CONVERTED INTO JIRA THAT CAN TAKE JQL
-            # Make a GET request to the API endpoint
-            # try: 
-            #     response = requests.get(url, params={'key': api_key, 'token': token, 'cards': 'open'}, verify=False)
-            #     response.raise_for_status()
-
-            #     if response.status_code == 200:
-            #         payload['trello_lists'] = self.get_board(response.json(), payload['user_profile_bot_data']['trello_lists'])
-            #         payload['chatml'].append({ 
-            #             "role": "system", 
-            #             "name": f"{self.bot_name}_supervisor", 
-            #             "content": payload['trello_lists']
-            #         })
-
-            #         print(payload['trello_lists']) 
-
-            # except RequestException as e:
-            #     if e.response is not None: 
-            #         if e.response.status_code == 403 or e.response.status_code == 401: 
-            #             payload['draft']['body'] = f"Trello access denied.  Erasing your credentials so you can supply them again."
-            #             payload['user_profile_bot_data']['trello_api_key'] = ""
-            #             payload['user_profile_bot_data']['trello_token'] = ""
-            #             payload['user_profile_bot_data']['trello_board_id'] = ""
-            #             payload['user_profile_lists']['trello_lists'] = ""
-            #         elif e.response.status_code == 404:
-            #             payload['draft']['body'] = f"Trello not found.  Erasing your board_id so you can supply it again."
-            #             payload['user_profile_bot_data']['trello_lists'] = ""
-            #         else: 
-            #             payload['draft']['body'] = f"We encounted a problem accessing Trello.  Status {e.response.status_code} e.response"
-            #     else:
-            #         payload['draft']['body'] = f"We encounted a problem accessing Trello.  {str(e)}"
-              
         
 
-    def get_chatml(self, payload, instruction):
+    def get_chatml(self, payload, instruction, message_count = 3):
         # TODO figure out the right about to put in the context window with out overflow 
         # I suspect all chatgpt helpers need to be in our chatgpt class, and probably shouldn't 
         # be steps in their own right
-        result = [ item for item in payload['chatml'][-3:] ]
+        result = [ item for item in payload['chatml'][-message_count:] ]
         result.append( 
             {
                 "content": instruction, 

@@ -36,6 +36,11 @@ steps:
             - draft tickets for the following [list]
             - give me a ticket description for [x]...
             - can you write a ticket for [y]...
+          get:
+            - show me ticket [issue-key or summary]
+            - show me those tickets
+            - whats in [issue-key]
+            - load [issue-key1], [issue-key2], [issue-key3]
   - class: ChatGPTJira
     model: gpt-4-turbo-preview
   - class: ChatGPTGuide

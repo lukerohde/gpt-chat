@@ -126,18 +126,21 @@ class BotManager:
 
         def bot_reloader(file):
             nonlocal loop
-            print(f"shutting down {len(asyncio.all_tasks(loop=loop))} tasks...")
-            future = asyncio.run_coroutine_threadsafe(bm.stop(), loop)
-            try:
-                future.result(timeout=10)  
-            except concurrent.futures.TimeoutError:
-                print("Timeout waiting for bm.stop() to finish.")
-            
-            print(f"{len(asyncio.all_tasks(loop=loop))} tasks still running.")
-            
+            if bm:
+                print(f"shutting down {len(asyncio.all_tasks(loop=loop))} tasks...")
+                future = asyncio.run_coroutine_threadsafe(bm.stop(), loop)
+                try:
+                    future.result(timeout=10)  
+                except concurrent.futures.TimeoutError:
+                    print("Timeout waiting for bm.stop() to finish.")
+                
+                print(f"{len(asyncio.all_tasks(loop=loop))} tasks still running.")
+                
             print(f"\n\nRELOADING AND RESTARTING...")
             asyncio.run_coroutine_threadsafe(start_bot(), loop)
             
+
+
         print(f'-- WATCHING {bot_path} --')
         watcher = BotWatcher()
         watcher.start_watching_path(bot_path, bot_reloader)
