@@ -1,6 +1,7 @@
 from bot_manager.bot_step import Step
 from bot_config.chatgpt import ChatGPT
 import json
+import re
 
 class ChatGPTDirector(Step):
 
@@ -20,7 +21,10 @@ class ChatGPTDirector(Step):
         print(json.dumps(chatml, indent=2))
         response = await ChatGPT.ask(chatml, model)
         try: 
-            parsed_json = json.loads(response['reply'])
+            reply = re.sub(r'`([^`]*)`', r'\1', response['reply']) # Remove backticks
+            reply = re.sub(r'^json\n|\n$', '', reply, flags=re.MULTILINE) #remove json
+                    
+            parsed_json = json.loads(reply)
             
             if parsed_json:
                 payload['draft']['body'] = f"I've classified this as {json.dumps(parsed_json, indent=2)}"

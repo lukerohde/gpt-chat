@@ -45,16 +45,18 @@ class ChatGPTJira(Step):
                 response = await ChatGPT.ask(chatml, model)
                 try: 
                     jql = response['reply']
-                    payload['notices'].append(jql)
+                    fixed_jql = re.sub(r'`([^`]*)`', r'\1', jql)
+
+                    payload['notices'].append(fixed_jql)
                     
                     # Call Jira API
                     reply = "No tickets found"
-                    if jql:
-                        search_results = self.search(jql, profile)
+                    if fixed_jql:
+                        search_results = self.search(fixed_jql, profile)
                         if not search_results.get('error'):
                             # Render the results in markdown format
                             table_result = self.extract_info_markdown_table(search_results, profile)
-                            reply = f"`{jql}` \n\n {table_result}"
+                            reply = f"`{fixed_jql}` \n\n {table_result}"
                         else:
                             reply = search_results.get('error')
                         
@@ -257,7 +259,7 @@ class ChatGPTJira(Step):
 
     def actionable(self, payload):
         actionable = bool(payload['capability'] and \
-            payload['capability']['object'] and \
+            payload['capability'].get('object') == 'jira' and \
             payload['capability']['action'] in ('create', 'update', 'search', 'draft', 'get') )
 
 

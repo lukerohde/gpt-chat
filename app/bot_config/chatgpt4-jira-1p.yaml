@@ -20,6 +20,11 @@ steps:
         Only reply with JSON and only use actions and objects shown in these examples.  Don't make up any actions or objects.
         If the request is not about one of our capabilities answer with an empty json payload {}
       capabilities: 
+        confluence: 
+          read:
+            - please summarize https://<your-confluence-site>.atlassian.net/wiki/spaces/<SPACEKEY>/pages/<PAGEID>/<PAGETITLE>
+            - list the tickets we need to raise on https://<your-confluence-site>.atlassian.net/wiki/spaces/<SPACEKEY>/pages/<PAGEID>/<PAGETITLE>
+            - on https://<your-confluence-site>.atlassian.net/wiki/spaces/<SPACEKEY>/pages/<PAGEID>/<PAGETITLE> ...
         jira:
           create:
             - Can you create jira tickets for the following stories...
