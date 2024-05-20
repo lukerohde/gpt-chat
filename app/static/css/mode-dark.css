@@ -1,3 +1,4 @@
+/*
 :root {
     --brand-color: #0E1C26;
     --complementary-color-1: #0d121b;
@@ -5,6 +6,15 @@
     --complementary-color-3: #455260;
     --complementary-color-4: #5C6A79;
     --complementary-color-5: #0F1929;
+}
+*/
+:root {
+    --brand-color: #1A1A40; /* Dark purple for brand color */
+    --complementary-color-1: #141228; /* Very dark purple for backgrounds */
+    --complementary-color-2: #2D2D57; /* Darker purple for elements */
+    --complementary-color-3: #4A4A75; /* Medium dark purple for contrasts */
+    --complementary-color-4: #6A6A9C; /* Light dark purple for subtle highlights */
+    --complementary-color-5: #100D28; /* Very dark color for contrast */
 }
 
 .fixed-header {
@@ -54,6 +64,11 @@ li.message:nth-child(odd) { background: var(--complementary-color-2); }
 
 #chat-input:focus {
     box-shadow: none;
+}
+
+#chat-input::placeholder {
+    color: var(--complementary-color-4);
+    opacity: 0.5;
 }
 
 #btn-send {

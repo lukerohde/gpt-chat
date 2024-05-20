@@ -3,7 +3,7 @@ from bot_manager.bot_step import Step
 class Draft(Step):
 
     async def process(self, payload):
-        
+
         messages=payload['messages']
 
         payload['draft']={

@@ -1,80 +1,55 @@
+import os
+import signal
+import subprocess
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+import time
 
-class BotWatcher(FileSystemEventHandler):
-    def __init__(self):
-        self.observer = Observer()
-        self.watch = None
-        self.callback = None
-        self.enabled = False
+class FileChangeHandler(FileSystemEventHandler):
+    def __init__(self, process_cmd):
+        super().__init__()
+        self.process_cmd = process_cmd
+        self.process = self.start_process()
 
-    def start_watching_path(self, file_path, reload_callback):
-        print(f'watching {file_path}')
-        
-        if self.watch: 
-            self.observer.unschedule(self.watch) 
-        
-        self.callback = reload_callback
-        self.watch = self.observer.schedule(self, path=file_path, recursive=True)
-        self.enabled = True
+    def start_process(self):
+        return subprocess.Popen(self.process_cmd, shell=True, preexec_fn=os.setsid)
 
-        
+    def restart_process(self):
+        self.terminate_process()
+        self.process = self.start_process()
+
+    def terminate_process(self):
+        if self.process:
+            os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+            try:
+                self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                os.killpg(os.getpgid(self.process.pid), signal.SIGKILL)
+
     def on_modified(self, event):
-        if not self.enabled:
+        if event.is_directory:
             return
-        
-        print(f"{event.src_path} modified")
-        self.enabled = False 
-        self.callback(event.src_path)
-            
-    def start(self):
-        self.observer.start()
-        
-    def stop(self):
-        self.observer.stop()
-        self.observer.join()
-        
-    def resume(self):
-        self.enabled = True
+
+        if event.src_path.endswith('.py') or event.src_path.endswith('.yaml'):
+            print(f'File changed: {event.src_path}')
+            self.restart_process()
+
+def monitor_directory(path, process_cmd):
+    event_handler = FileChangeHandler(process_cmd)
+    observer = Observer()
+    observer.schedule(event_handler, path, recursive=True)
+    observer.start()
+    try:
+        while True:
+            observer.join(1)
+    except KeyboardInterrupt:
+        observer.stop()
+        event_handler.terminate_process()
+    observer.join()
 
 
 
-# class BotWatcher(FileSystemEventHandler):
-#     def __init__(self):
-#         self.observer = Observer()
-#         self.watches = {}
-
-#     def start_watching_path(self, file_path, reload_callback, file_extensions = None):
-#         print(f'watching {file_path} {file_extensions}')
-
-#         self.stop_watching_path(file_path)
-
-#         self.watches[file_path] = {
-#             'watch': self.observer.schedule(self, path=file_path, recursive=True), 
-#             'callback': reload_callback,
-#             'extensions': file_extensions
-#         }
-
-#     def stop_watching_path(self, file_path):
-#         watch = self.watches.get(file_path)
-#         if (watch is not None):
-#             print(f'stop watching {file_path}')
-#             self.observer.unschedule(watch['watch']) 
-#             del self.watches[file_path]
-        
-
-#     def on_modified(self, event):
-#         print("modified")
-#         watch = self.watches.get(event.src_path)
-
-#         if watch is not None: 
-#             if watch['extensions'] is None or (not event.is_directory and any(event.src_path.endswith(ext) for ext in watch['extensions'])):
-#                 print(f'{event.src_path} has been modified')
-#                 watch['callback'](event.src_path)
-            
-#     def start(self):
-#         self.observer.start()
-
-#     def stop(self):
-#         self.observer.stop()
-#         self.observer.join()
+if __name__ == "__main__":
+    directory_to_watch = "bot_config/"
+    process_command = "python bot_manager/bot_runner.py"
+    monitor_directory(directory_to_watch, process_command)

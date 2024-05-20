@@ -1,0 +1,9 @@
+name: OneShopBot
+steps:
+  - class: Draft
+  - class: BedrockAgentAsk
+    config:
+      llm_config:
+        agent_alias_id: 6TLPULO6MW
+        agent_id: JER0AM2NOG
+  - class: Reply

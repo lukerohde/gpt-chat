@@ -1,4 +1,4 @@
-:root {
+/* :root {
     --brand-color: #5B9BD5;
     --complementary-color-1: #273e54;
     --complementary-color-2: #AED6F1;
@@ -6,6 +6,15 @@
     --complementary-color-4: #FDEDEC;
     --complementary-color-5: #1C2833;
 
+} */
+
+:root {
+    --brand-color: #673AB7; /* Matches the purple header */
+    --complementary-color-1: #7C4DFF; /* A brighter purple for highlights */
+    --complementary-color-2: #D1C4E9; /* Light purple for backgrounds or secondary elements */
+    --complementary-color-3: #EDE7F6; /* Very light purple for subtle background */
+    --complementary-color-4: #FFFFFF; /* White for text or backgrounds */
+    --complementary-color-5: #311B92; /* Darker purple for contrasts */
 }
 
 .fixed-header {
@@ -51,6 +60,11 @@ li.message:nth-child(odd) { background: var(--complementary-color-4); }
 
 #chat-input:focus {
     box-shadow: none;
+}
+
+#chat-input::placeholder {
+    color: var(--complementary-color-4);
+    opacity: 0.5;
 }
 
 #btn-send {

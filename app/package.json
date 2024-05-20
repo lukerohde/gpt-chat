@@ -10,7 +10,7 @@
     "server": "npm run bundlejs && python manage.py runserver 0.0.0.0:3000",
     "hotreloadjs": "parcel static/js/index.js --out-dir static/dist --public-url /static/dist --hmr-port 1235",
     "bundlejs": "parcel build static/js/index.js --out-dir static/dist --public-url /static/dist",
-    "bots": "python bot_manager/bot_runner.py",
+    "bots": "python bot_manager/bot_watcher.py",
     "everything": "concurrently \"python manage.py runserver 0.0.0.0:3000\" \"python bot_manager/bot_runner.py\" \"parcel static/js/index.js --out-dir static/dist --public-url /static/dist --hmr-port 1235\"",
     "build": "NODE_ENV=production parcel build static/js/index.js --out-dir static/dist --public-url /static/dist --detailed-report",
     "watch": "parcel watch static/js/index.js --out-dir static/dist --public-url /static/dist"

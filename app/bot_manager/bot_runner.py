@@ -8,7 +8,6 @@ from typing import Any, Dict, Optional, Type
 from aiohttp import web, ClientSession
 import signal
 
-from bot_manager.bot_watcher import BotWatcher
 from bot_manager.bot_redis import RedisQueueManager
 from bot_manager.bot import Bot
 from bot_manager.bot_server import BotServer
@@ -16,7 +15,7 @@ from bot_manager.bot_server import BotServer
 # from watchdog.observers import Observer
 # from watchdog.events import FileSystemEventHandler
 
-class BotManager:
+class BotRunner:
     def __init__(self, bot_path: str, step_path: str):
         self.bot_path = bot_path
         self.step_path = step_path
@@ -48,13 +47,17 @@ class BotManager:
     
     def load_bot(self, file):
 
-        print(f"\nLoading Bot Config in {file}...")
         bot_config = {}
         with open(file, 'r') as f:
             bot_config = yaml.safe_load(f)
 
-        bot_config['step_path'] = self.step_path
-        bot = Bot(bot_config, queue_manager=self.queue_manager, bot_server = self.server)
+        if bot_config.get('disabled', False):
+            return
+        else:
+            print(f"\nLoading Bot Config in {file}...")
+        
+            bot_config['step_path'] = self.step_path
+            bot = Bot(bot_config, queue_manager=self.queue_manager, bot_server = self.server)
         
         self.bots[file] = bot
 
@@ -103,49 +106,48 @@ class BotManager:
             return 
 
         loop = asyncio.get_event_loop()
-        bm = None
+        br = None
         tasks = None
         server = None
         
         async def start_bot():
-            nonlocal bm
+            nonlocal br
             nonlocal tasks
             nonlocal server
             nonlocal loop
-            nonlocal watcher
+            #nonlocal watcher
 
-            bm = BotManager(bot_path, step_path)
-            bm.debug = args.debug
-            server = loop.create_task(bm.server.start())
-            tasks = bm.process_async()
-            watcher.resume()
+            br = BotRunner(bot_path, step_path)
+            br.debug = args.debug
+            server = loop.create_task(br.server.start())
+            tasks = br.process_async()
+            #watcher.resume()
 
         def stop_bot():
-            loop.run_until_complete(bm.stop())
+            loop.run_until_complete(br.stop())
         
 
-        def bot_reloader(file):
-            nonlocal loop
-            if bm:
-                print(f"shutting down {len(asyncio.all_tasks(loop=loop))} tasks...")
-                future = asyncio.run_coroutine_threadsafe(bm.stop(), loop)
-                try:
-                    future.result(timeout=10)  
-                except concurrent.futures.TimeoutError:
-                    print("Timeout waiting for bm.stop() to finish.")
+        # def bot_reloader(file):
+        #     nonlocal loop
+        #     if br:
+        #         print(f"shutting down {len(asyncio.all_tasks(loop=loop))} tasks...")
+        #         future = asyncio.run_coroutine_threadsafe(br.stop(), loop)
+        #         try:
+        #             future.result(timeout=10)  
+        #         except concurrent.futures.TimeoutError:
+        #             print("Timeout waiting for br.stop() to finish.")
                 
-                print(f"{len(asyncio.all_tasks(loop=loop))} tasks still running.")
+        #         print(f"{len(asyncio.all_tasks(loop=loop))} tasks still running.")
                 
-            print(f"\n\nRELOADING AND RESTARTING...")
-            asyncio.run_coroutine_threadsafe(start_bot(), loop)
+        #     print(f"\n\nRELOADING AND RESTARTING...")
+        #     asyncio.run_coroutine_threadsafe(start_bot(), loop)
             
 
 
-        print(f'-- WATCHING {bot_path} --')
-        watcher = BotWatcher()
-        watcher.start_watching_path(bot_path, bot_reloader)
-        #watcher.start_watching_path(step_path, bot_reloader)
-        watcher.start()
+        #print(f'-- WATCHING {bot_path} --')
+        #watcher = BotWatcher()
+        #watcher.start_watching_path(bot_path, bot_reloader)
+        #watcher.start()
         
         loop.create_task(start_bot())
 
@@ -157,4 +159,4 @@ class BotManager:
             stop_bot()
 
 if __name__ == "__main__":
-    BotManager.main()
+    BotRunner.main()

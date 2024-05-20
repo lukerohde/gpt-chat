@@ -66,7 +66,7 @@ class Bot:
             
     def load_step_file(self, step_file) -> None: 
         module_name = os.path.splitext(os.path.basename(step_file))[0]
-        print(f'inspecting {module_name}.py')
+        #print(f'inspecting {module_name}.py')
 
         if module_name == "__init__":
             return
@@ -81,7 +81,7 @@ class Bot:
         for key, value in module.__dict__.items():
             if isinstance(value, type) and issubclass(value, Step) and value != Step:
                 step_class = value
-                print(f'Found {step_class}')
+                #print(f'Found {step_class}')
                 self.step_classes[step_class.__name__] = step_class
 
                 if self.step_files.get(step_file, None):
