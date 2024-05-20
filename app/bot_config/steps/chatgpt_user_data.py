@@ -1,6 +1,7 @@
 from bot_manager.bot_step import Step
-from bot_config.chatgpt import ChatGPT
+from bot_config.steps.chatgpt import ChatGPT
 import json
+from bot_config.steps.llm import LLM 
 
 class ChatGPTUserData(Step):
 
@@ -40,13 +41,17 @@ class ChatGPTUserData(Step):
                 {
                     "content": request, 
                     "name": f'{self.bot_name}_supervisor',
-                    "role": "system"
+                    "role": "user"
                 }
             ]
-                
-            # print(json.dumps(chatml, indent=2))
 
-            response = await ChatGPT.ask(chatml, model)
+            if self.config.get('debug', False):    
+                print(json.dumps(chatml, indent=2))
+
+            config = self.config.get('llm_config', {})
+            llm = LLM(self.config.model, config)
+            response = await llm.ask(chatml)
+            
             try: 
                 parsed_json = json.loads(response['reply'])
                 print(parsed_json)
@@ -58,7 +63,7 @@ class ChatGPTUserData(Step):
                     payload['draft']['body'] = f"Your profile data has been updated.  \n {json.dumps(payload['user_profile_bot_data'])}"
             
             except json.JSONDecodeError:
-                payload['draft']['body'] = f"Failed to parse JSON returned by {model} in {self.name}\n\n{response['reply']}"
+                payload['draft']['body'] = f"Failed to parse JSON returned by {self.config.model} in {self.step_name}\n\n{response['reply']}"
                 
         return payload 
 

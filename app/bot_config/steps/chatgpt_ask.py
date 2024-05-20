@@ -1,5 +1,6 @@
 from bot_manager.bot_step import Step
-from chatgpt import ChatGPT
+from bot_config.steps.chatgpt import ChatGPT
+from bot_config.steps.llm import LLM
 import json
 
 class ChatGPTAsk(Step):
@@ -11,12 +12,13 @@ class ChatGPTAsk(Step):
 
         if payload['draft']['body'] != '¯\_(ツ)_/¯':
             return payload
-
-        #print(json.dumps(payload, indent=4))
-
-        print(payload['chatml'])
         
-        payload['openai'] = await ChatGPT.ask(payload['chatml'], self.config.model)
+        config = self.config.get('llm_config', {})
+        config = config.update(payload['user_profile_bot_data'])
+            
+        llm = LLM(self.config.model, config)
+        #payload['openai'] = await ChatGPT.ask(payload['chatml'], self.config.model)
+        payload['openai'] = await llm.ask(payload['chatml'])
         
         if not 'draft' in payload: 
             payload['draft'] = {}

@@ -1,10 +1,11 @@
 from bot_manager.bot_step import Step
-from bot_config.chatgpt import ChatGPT
+from bot_config.steps.chatgpt import ChatGPT
 import requests
 from requests.exceptions import RequestException
 import json 
 import re
 import textwrap
+from bot_config.steps.llm import LLM 
 
 class ChatGPTJira(Step):
 
@@ -27,22 +28,26 @@ class ChatGPTJira(Step):
 
                     If the user asks for current or open tickets include a filter `statuscategory != Done`
                     
-                    Reply only in JQL as your response will be directly used in an API call.
-                    
+                    Reply only in valid and up to date JQL as your response will be directly used in an API call.
+                                                                                    
+                    example jql
+                    * `summary ~ 'streamlit' order by createddate desc`
+                    * `assignee = 'Nova Tan' and statuscategory != Done order by updateddate desc`                                                                                                                          
+
                     Order by most to least recently updated. Leave the jql bare without quotes.
                     {jira_config}
 
                     JQL: 
                     """)
                 instruction = instruction.replace('{jira_config}', json.dumps(jira_config))
-                
                 chatml = self.get_chatml(payload, instruction)
-                print(json.dumps(chatml, indent=2))
+                
+                if self.config.get('debug', False):
+                    print(json.dumps(chatml, indent=2))
 
-                # Call OpenAI for JQL
-                model = self.config.get('model',  "gpt-3.5-turbo")
+                llm = LLM(self.config.model, self.config.get('llm_config', {}))
+                response = await llm.ask(chatml)
 
-                response = await ChatGPT.ask(chatml, model)
                 try: 
                     jql = response['reply']
                     fixed_jql = re.sub(r'`([^`]*)`', r'\1', jql)
@@ -109,15 +114,15 @@ class ChatGPTJira(Step):
                     Tickets: 
                     """)
                 instruction = instruction.replace('{jira_config}', json.dumps(jira_config))
-                
                 chatml = self.get_chatml(payload, instruction)
-                print(json.dumps(chatml, indent=2))
+                
+                if self.config.get('debug', False):
+                    print(json.dumps(chatml, indent=2))
 
-                # Call OpenAI for JQL
-                model = self.config.get('model',  "gpt-3.5-turbo")
-
+                llm = LLM(self.config.model, self.config.get('llm_config', {}))
+                
                 try: 
-                    response = await ChatGPT.ask(chatml, model)
+                    response = await llm.ask(chatml)
                     tickets = response['reply']
                     
                     payload['draft']['body'] = tickets
@@ -164,16 +169,16 @@ class ChatGPTJira(Step):
                     """)
 
                 instruction = instruction.replace('{jira_config}', json.dumps(jira_config))
-                
                 chatml = self.get_chatml(payload, instruction)
-                print(json.dumps(chatml, indent=2))
+                
+                if self.config.get('debug', False):
+                    print(json.dumps(chatml, indent=2))
 
-                # Call OpenAI for JQL
-                model = self.config.get('model',  "gpt-3.5-turbo")
-
+                llm = LLM(self.config.model, self.config.get('llm_config', {}))
+                
                 try: 
-                    response = await ChatGPT.ask(chatml, model)
-                    
+                    response = await llm.ask(chatml)
+    
                     # remove json markdown that chatgpt often does
                     pattern = r'^json\n|\n$'
                     cleaned_json_string = re.sub(pattern, '', response['reply'], flags=re.MULTILINE)
@@ -214,6 +219,10 @@ class ChatGPTJira(Step):
                         "jql": "INSERT JQL HER OR EMPTY STRING"
                     }
                     
+                    example jql 
+                    * `summary ~ 'streamlit' order by createddate desc`   
+                    * `assignee = 'Nova Tan' and statuscategory != Done order by updateddate desc`                                                                                                                          
+
                     The following Jira config might be helpful. 
                     
                     {jira_config}
@@ -224,15 +233,16 @@ class ChatGPTJira(Step):
                     """)
 
                 instruction = instruction.replace('{jira_config}', json.dumps(jira_config))
-                
                 chatml = self.get_chatml(payload, instruction, 6)
                 
-                # Call OpenAI for JQL
-                model = self.config.get('model',  "gpt-3.5-turbo")
+                if self.config.get('debug', False):
+                    print(json.dumps(chatml, indent=2))
 
+                llm = LLM(self.config.model, self.config.get('llm_config', {}))
+                
                 try: 
-                    response = await ChatGPT.ask(chatml, model)
-                    
+                    response = await llm.ask(chatml)
+
                     # remove json markdown that chatgpt often does
                     pattern = r'^json\n|\n$'
                     cleaned_json_string = re.sub(pattern, '', response['reply'], flags=re.MULTILINE)
@@ -452,7 +462,7 @@ class ChatGPTJira(Step):
             {
                 "content": instruction, 
                 "name": f'{self.bot_name}_supervisor',
-                "role": "system"
+                "role": "user"
             }
         )
 

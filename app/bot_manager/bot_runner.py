@@ -90,7 +90,7 @@ class BotManager:
 
         args = parser.parse_args()
         bot_path = args.bot_path or os.path.join(os.getcwd(), "bot_config")
-        step_path = args.step_path or os.path.join(os.getcwd(), "bot_config")
+        step_path = args.step_path or os.path.join(os.getcwd(), "bot_config/steps")
 
         if not os.path.isdir(bot_path):
             parser.print_usage()

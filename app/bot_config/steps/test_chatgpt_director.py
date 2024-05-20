@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, AsyncMock
-from bot_config.chatgpt_director import ChatGPTDirector
+from bot_config.steps.chatgpt_director import ChatGPTDirector
 
 class TestChatGPTDirector(unittest.IsolatedAsyncioTestCase):
 

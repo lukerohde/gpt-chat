@@ -13,7 +13,7 @@ steps:
   - class: ChatGPTFitContext
     config:
       maxPromptLength: 12000
-  - class: ChatGPTAsk
+  - class: LLMAsk
     config:
       model: gpt-3.5-turbo
   - class: Reply

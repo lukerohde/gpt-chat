@@ -1,8 +1,7 @@
-name: chatgpt-4-trello
+name: langchain-gpt4o
 steps:
   - class: Draft
   - class: ChatGPTPrompt
-  - class: Trello
   - class: ChatGPTGuide
     config: 
       before: |
@@ -13,9 +12,10 @@ steps:
         FYI in case its required, the current time is {current_time}.  
   - class: ChatGPTFitContext
     config:
-      maxPromptLength: 12000
-  - class: ChatGPTUserData
-  - class: LLMAsk
+      maxPromptLength: 700000
+  - class: LangchainAsk
     config:
-      model: gpt-4-turbo-preview
+      model: gpt-4o
+      llm_config:
+        debug: true
   - class: Reply

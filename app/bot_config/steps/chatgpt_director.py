@@ -1,7 +1,8 @@
 from bot_manager.bot_step import Step
-from bot_config.chatgpt import ChatGPT
+from bot_config.steps.chatgpt import ChatGPT
 import json
 import re
+from bot_config.steps.llm import LLM 
 
 class ChatGPTDirector(Step):
 
@@ -13,13 +14,13 @@ class ChatGPTDirector(Step):
             return payload 
 
         instruction = self.get_instruction()
-
         chatml = self.get_chatml(payload, instruction)
-        
-        model = self.config.get('model',  "gpt-3.5-turbo")
 
-        print(json.dumps(chatml, indent=2))
-        response = await ChatGPT.ask(chatml, model)
+        config = self.config.get('llm_config', {})
+        config.update(payload['user_profile_bot_data'])
+        llm = LLM(self.config.model, config)
+        response = await llm.ask(chatml)
+        
         try: 
             reply = re.sub(r'`([^`]*)`', r'\1', response['reply']) # Remove backticks
             reply = re.sub(r'^json\n|\n$', '', reply, flags=re.MULTILINE) #remove json
@@ -28,12 +29,13 @@ class ChatGPTDirector(Step):
             
             if parsed_json:
                 payload['draft']['body'] = f"I've classified this as {json.dumps(parsed_json, indent=2)}"
+                print(payload['draft']['body'])
                 payload['capability'] = parsed_json
             else:
                 payload['notices'].append("ChatGPTDirector could not match this request to a capability")
                 
         except json.JSONDecodeError:
-            payload['draft']['body'] = f"Failed to parse JSON returned by {model} in {self.__class__.__name__}\n\n{response['reply']}"
+            payload['draft']['body'] = f"Failed to parse JSON returned by {self.config.model} in {self.__class__.__name__}\n\n{response['reply']}"
             
         return payload 
 
@@ -55,6 +57,9 @@ class ChatGPTDirector(Step):
             These are the only actions and objects that are shown in the examples.  
             If the user's request doesn't relate to these answer with an 
             empty json response like {}
+
+            Your entire reponse will be directly parsed by `json.loads` into a python dict 
+            so only answer with a json dict.
         """
 
         # format examples

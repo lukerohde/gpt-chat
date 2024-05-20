@@ -1,11 +1,12 @@
 from bot_manager.bot_step import Step
-from bot_config.chatgpt import ChatGPT
+from bot_config.steps.chatgpt import ChatGPT
 import requests
 from requests.exceptions import RequestException
 import json 
 import re
 import textwrap
 import html2text
+from bot_config.steps.llm import LLM
 
 class ChatGPTConfluence(Step):
 
@@ -15,7 +16,6 @@ class ChatGPTConfluence(Step):
             
             profile = payload['user_profile_bot_data']
             action = payload['capability']['action']
-            jira_config = {k: v for k, v in profile.items() if k.startswith('JIRA_') and not k == 'JIRA_API_TOKEN'}
                 
             if action == 'read':
                 # Construct prompt for OpenAI to generate a JQL search
@@ -38,16 +38,15 @@ class ChatGPTConfluence(Step):
                     Your response needs to be machine readable with no markdown.
                                                                                                                                        
                     If there are no confluence pages being queried, discard the enquires and answer with empty json dict {} (w/no markdown)
-                    
-                    JSON: 
                     """)
                 
                 chatml = self.get_chatml(payload, instruction)
                 
-                # Call OpenAI for JQL
-                model = self.config.get('model',  "gpt-3.5-turbo")
+                if self.config.get('debug', False):
+                    print(json.dumps(chatml, indent=2))
 
-                response = await ChatGPT.ask(chatml, model)
+                llm = LLM(self.config.model, self.config.get('llm_config', {}))
+                response = await llm.ask(chatml)
                 try: 
                     reply = re.sub(r'`([^`]*)`', r'\1', response['reply']) # Remove backticks
                     reply = re.sub(r'^json\n|\n$', '', reply, flags=re.MULTILINE) #remove json
@@ -65,17 +64,25 @@ class ChatGPTConfluence(Step):
                                                                                                                                                                    
                                 Please answer these enquiries ```{json.dumps(reply['enquiries'])}```
                                 """)
-                            chatml = self.get_chatml({"chatml":[]}, instruction)
-                            response = await ChatGPT.ask(chatml, model)
                             
+                            chatml = [{
+                                "content": instruction, 
+                                "role": "user",
+                                "name": self.bot_name
+                            }]
+
+                            if self.config.get('debug', False):
+                                print(json.dumps(chatml, indent=2))
+
+                            response = await llm.ask(chatml)
                             body = response['reply']
-                
                         else:
                             body = read_results.get('error')
                         
-                    payload['draft']['body'] = body
+                        payload['draft']['body'] = body
+                        
                 except json.JSONDecodeError:
-                    payload['draft']['body'] = f"Failed to parse JSON returned by {model} in {self.__class__.__name__}\n\n{response['reply']}"
+                    payload['draft']['body'] = f"Failed to parse JSON returned by {self.config.model} in {self.__class__.__name__}\n\n{response['reply']}"
                    
         return payload 
 
@@ -148,7 +155,7 @@ class ChatGPTConfluence(Step):
             
 
 
-    def get_chatml(self, payload, instruction, message_count = 3):
+    def get_chatml(self, payload, instruction, message_count = 4):
         # TODO figure out the right about to put in the context window with out overflow 
         # I suspect all chatgpt helpers need to be in our chatgpt class, and probably shouldn't 
         # be steps in their own right

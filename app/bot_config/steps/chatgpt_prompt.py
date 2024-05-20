@@ -3,13 +3,14 @@ from bot_manager.bot_step import Step
 import pytz 
 import datetime
 import dateutil.parser
+from bot_config.steps.llm import LLM
 
 class ChatGPTPrompt(Step):
 
     async def process(self, payload):
         messages=payload['messages']
 
-        payload['chatml'] = self._chatml(messages)
+        payload['chatml'] = [ LLM.chatml(message, self.bot_name, self._dress_content) for message in messages ]
 
         return payload
     
@@ -27,21 +28,6 @@ class ChatGPTPrompt(Step):
             content = content.replace('{timestamp}', str(melbourne_time))            
         
         return content 
-
-    def _format_chatml(self, message, bot_name):
-        
-        chat_ml = { 
-            "content": self._dress_content(message),
-            "name": message["user"],
-            "role": "assistant" if message["user"] == bot_name else "user"
-         }
-
-        return chat_ml
-    
-    def _chatml(self, messages):
-        results = [self._format_chatml(message, self.bot_name) for message in messages]
-        
-        return results
 
 if __name__ == "__main__":
     ChatGPTPrompt.main()

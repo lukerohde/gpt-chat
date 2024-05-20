@@ -5,9 +5,9 @@ from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
 
 
-from .brain.working_memory import WorkingMemory
-from .brain.long_term_memory import LongTermMemory
-from .brain.chatgpt import ChatGPT
+# from .brain.working_memory import WorkingMemory
+# from .brain.long_term_memory import LongTermMemory
+# from .brain.chatgpt import ChatGPT
 import datetime
 import secrets
 import markdown
@@ -28,9 +28,9 @@ class Bot(Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs) # Call parent's constructor
 
-        self.long_term_memory = None 
-        self.working_memory = None
-        self.openai_chat = None
+        # self.long_term_memory = None 
+        # self.working_memory = None
+        # self.openai_chat = None
         
         
     def __str__(self):
@@ -45,40 +45,40 @@ class Bot(Model):
         
         super().save(*args, **kwargs) # Call parent's save method  
     
-    def load_user_history(self,username):
-        self.long_term_memory=LongTermMemory(self.openai_api_key, self.openai_embedding_model, self.botname, username)
-        self.working_memory=WorkingMemory(self, username)
-        self.openai_chat = ChatGPT(
-            self.openai_api_key, 
-            self.openai_completion_model, 
-            self.openai_temperature, 
-            self.openai_response_tokens,
-        )
+    # def load_user_history(self,username):
+    #     self.long_term_memory=LongTermMemory(self.openai_api_key, self.openai_embedding_model, self.botname, username)
+    #     self.working_memory=WorkingMemory(self, username)
+    #     self.openai_chat = ChatGPT(
+    #         self.openai_api_key, 
+    #         self.openai_completion_model, 
+    #         self.openai_temperature, 
+    #         self.openai_response_tokens,
+    #     )
     
 
-    def add_dialog(self, username, prompt):
+    # def add_dialog(self, username, prompt):
 
-        prompt = prompt # expect user markdown
+    #     prompt = prompt # expect user markdown
 
-        self.working_memory.add_dialog(
-            username,
-            datetime.datetime.now(),
-            prompt
-        )
+    #     self.working_memory.add_dialog(
+    #         username,
+    #         datetime.datetime.now(),
+    #         prompt
+    #     )
         
-        bot_memory = self.working_memory.retrieve()
-        bot_memory += f"\n\n{self.botname}: "
+    #     bot_memory = self.working_memory.retrieve()
+    #     bot_memory += f"\n\n{self.botname}: "
         
-        answer = self.openai_chat.answer(bot_memory)
+    #     answer = self.openai_chat.answer(bot_memory)
         
-        self.working_memory.add_dialog(
-            self.botname,
-            datetime.datetime.now(),
-            answer
-        )
+    #     self.working_memory.add_dialog(
+    #         self.botname,
+    #         datetime.datetime.now(),
+    #         answer
+    #     )
 
-        self.working_memory.retrieve() # just to flush the response to disk
+    #     self.working_memory.retrieve() # just to flush the response to disk
 
-        answer = markdown.markdown(answer) # expect markdown back, and convert to HTML
-        return answer
+    #     answer = markdown.markdown(answer) # expect markdown back, and convert to HTML
+    #     return answer
     

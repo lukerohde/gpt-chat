@@ -1,24 +1,29 @@
-name: chatgpt-4-jira-1p
+name: sonnet-jira
 steps:
   - class: Draft
   - class: ChatGPTPrompt
   - class: ChatGPTDirector
     config:
-      model: gpt-4-turbo-preview
+      model: anthropic.claude-3-sonnet-20240229-v1:0
+      llm_config:
+        debug: true
+        anthropic_version: bedrock-2023-05-31
+        temperature: 0
       classify: |
         You are a natural language task classifier for a chatbot.  
         Your job is to assess if a user is asking us to perform a
         a task that the chatbot is capable of performing.  
 
-        You will also classify the task against our list of capabilities. 
-        Capabilities come in action/object pairs described like { "action": "create", "object": "email"}. 
+        You will classify the task as one of our listed of capabilities. 
+        Capabilities are described like { "action": "create", "object": "email"}. 
 
         Here are some examples of user requests the chatbot supports, with your expected response.
         
         {request_response_examples}
         
         Only reply with JSON and only use actions and objects shown in these examples.  Don't make up any actions or objects.
-        If the request is not about one of our capabilities answer with an empty json payload {}
+        Only provide one classifcation, the most likely classification. 
+        If the request is a general request and not about one of our capabilities answer with an empty json payload {}
       capabilities: 
         confluence: 
           read:
@@ -41,21 +46,43 @@ steps:
             - draft tickets for the following [list]
             - give me a ticket description for [x]...
             - can you write a ticket for [y]...
+          get:
+            - show me ticket [issue-key or summary]
+            - show me those tickets
+            - whats in [issue-key]
+            - load [issue-key1], [issue-key2], [issue-key3]
   - class: ChatGPTJira
-    model: gpt-4-turbo-preview
-  - class: ChatGPTGuide
-    config: 
-      before: |
-        You are an helpful assistant. Answer questions in a concise way. If you are unsure about the answer say 'I am unsure'
-
-      after: |
-        Please respond in markdown format with two spaces at the end of every sentence.
-        FYI in case its required, the current time is {current_time}.  
+    config:
+      model: anthropic.claude-3-sonnet-20240229-v1:0
+      llm_config:
+          debug: true
+          anthropic_version: bedrock-2023-05-31
+          temperature: 0
+  - class: ChatGPTConfluence
+    config:
+      model: anthropic.claude-3-sonnet-20240229-v1:0
+      llm_config:
+          debug: true
+          anthropic_version: bedrock-2023-05-31
+          temperature: 0
   - class: ChatGPTFitContext
     config:
-      maxPromptLength: 12000
+      maxPromptLength: 700000
   - class: ChatGPTUserData
+    config:
+      model: anthropic.claude-3-sonnet-20240229-v1:0
+      llm_config:
+        debug: true
+        anthropic_version: bedrock-2023-05-31
+        temperature: 0
   - class: LLMAsk
     config:
-      model: gpt-4-turbo-preview
+      model: anthropic.claude-3-sonnet-20240229-v1:0
+      llm_config:
+        debug: true
+        anthropic_version: bedrock-2023-05-31
+        system_instruction: | 
+          You are an helpful assistant. Answer questions in a concise way. If you are unsure about the answer say 'I am unsure'
+
+          Please respond in markdown format with two spaces at the end of every sentence.
   - class: Reply

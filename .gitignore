@@ -10,6 +10,7 @@ __pycache__
 app/bots/*.json
 app/*.json
 app/logs
+session.log
 
 # deployment stuff
 .digital_ocean_env
@@ -68,3 +69,4 @@ nosetests.xml
 
 #VS Code
 .vscode
+*.code-workspace

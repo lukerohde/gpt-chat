@@ -7,7 +7,10 @@ from typing import Optional
 
 # External Dependencies:
 import boto3
+import botocore
 from botocore.config import Config
+import json
+from aiohttp import ClientSession
 
 
 def get_bedrock_client(
@@ -77,3 +80,47 @@ def get_bedrock_client(
     print("boto3 Bedrock client successfully created!")
     print(bedrock_client._endpoint)
     return bedrock_client
+
+async def ask(model, payload):
+    async with ClientSession() as session:
+        
+        body = json.dumps(payload)
+        
+        accept = "application/json"
+        contentType = "application/json"
+
+        boto3_bedrock = get_bedrock_client(
+            assumed_role=os.environ.get("BEDROCK_ASSUME_ROLE", None),
+            region=os.environ.get("AWS_DEFAULT_REGION", None)
+        )
+
+        result = {}
+        try:
+            response = boto3_bedrock.invoke_model(
+                body=body, modelId=model, accept=accept, contentType=contentType
+            )
+            result = json.loads(response.get("body").read())
+            result['reply'] = ""
+            
+            # This handles different bedrock formats.  Consider splitting this out into seperate steps.
+            
+            if "results" in result:
+                result['reply'] = result.get("results")[0].get("outputText")
+            elif "content" in result: 
+                result['reply'] = result['content'][0].get('text','')
+            elif "generation" in result:
+                result['reply'] = result.get("generation")
+            else:
+                result['reply'] = json.dumps(result)
+            
+        except botocore.exceptions.ClientError as error:
+            result['reply'] = f"Error Code: {error.response['Error']['Code']}\n{error.response['Error']['Message']}"
+            if  error.response['Error']['Code'] == 'AccessDeniedException':
+                result['reply'] += f"\
+                \nTo troubeshoot this issue please refer to the following resources.\
+                \nhttps://docs.aws.amazon.com/IAM/latest/UserGuide/troubleshoot_access-denied.html\
+                \nhttps://docs.aws.amazon.com/bedrock/latest/userguide/security-iam.html\
+                "  
+
+        return result
+     

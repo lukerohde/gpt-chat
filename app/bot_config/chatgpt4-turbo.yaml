@@ -14,7 +14,7 @@ steps:
     config:
       maxPromptLength: 12000
   - class: ChatGPTUserData
-  - class: ChatGPTAsk
+  - class: LLMAsk
     config:
       model: gpt-4-turbo-preview
   - class: Reply
